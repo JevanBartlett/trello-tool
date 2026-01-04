@@ -1,5 +1,16 @@
 # Research Notes
 
+## Progress Log
+
+**2025-01-04:** Project setup complete
+- GitHub repo created: https://github.com/JevanBartlett/trello-tool
+- SSH key configured for GitHub authentication (ed25519)
+- Initial commit pushed with project scaffolding
+- Tools configured: TypeScript, ESLint, Prettier, Husky (pre-commit hooks)
+- Next: Task 1.2 - Get Trello API credentials
+
+---
+
 ## Trello API Authentication
 
 **API Key vs Token - Key Distinction:**
@@ -27,7 +38,7 @@ You need BOTH to make requests. The token doesn't specify which board — it gra
 
 ---
 
-## Imran's Board Structure
+## Josh's Board Structure
 
 **Board:** FCO UAT task list
 
