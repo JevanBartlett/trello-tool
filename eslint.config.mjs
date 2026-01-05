@@ -13,7 +13,7 @@ export default tseslint.config(
       },
     },
     rules: {
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      //'no-console': ['warn', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },

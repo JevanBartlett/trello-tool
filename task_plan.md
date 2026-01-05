@@ -24,29 +24,32 @@ Done when: You see "Hello Trello" in terminal
 **Completed:** Project scaffolded with TypeScript, ESLint, Prettier, Husky pre-commit hooks
 
 
- Task 1.2: Get Trello credentials
+✅ Task 1.2: Get Trello credentials
 
 Go to https://trello.com/power-ups/admin
 Create a new Power-Up (just to get API key)
 Generate API key and token
 Store in .env file (add .env to .gitignore)
 Done when: You have TRELLO_API_KEY and TRELLO_TOKEN in .env
+**Completed:** Credentials stored in .env, .gitignore already configured
 
 
- Task 1.3: First API call
+✅ Task 1.3: First API call
 
 Install dotenv and a fetch library (or use native fetch)
 Make GET request to https://api.trello.com/1/members/me
 Log the response
 Done when: You see your Trello username printed
+**Completed:** Using native fetch, dotenv installed, username 'joshbartlett16' returned
 
 
- Task 1.4: Fetch your boards
+✅ Task 1.4: Fetch your boards
 
 GET https://api.trello.com/1/members/me/boards
 Parse response JSON
 Print board names to console
 Done when: Your board names appear in terminal
+**Completed:** 10 boards returned including FCO UAT Task, Mom's Project, Shopping Lists
 
 
 

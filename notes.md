@@ -7,7 +7,15 @@
 - SSH key configured for GitHub authentication (ed25519)
 - Initial commit pushed with project scaffolding
 - Tools configured: TypeScript, ESLint, Prettier, Husky (pre-commit hooks)
-- Next: Task 1.2 - Get Trello API credentials
+
+**2025-01-05:** Week 1 complete - First API calls working
+- Task 1.2: Trello credentials stored in .env
+- Task 1.3: First API call to /members/me successful (username: joshbartlett16)
+- Task 1.4: Fetched all boards via /members/me/boards
+- Installed dotenv package for loading .env
+- Learned: ES modules + ts-node don't mix well; use `npm run build && npm start` instead
+- Learned: ESLint strict mode flags `any` types from response.json() — use `unknown`
+- Next: Task 1.5 - Refactor API logic into separate module (Week 2)
 
 ---
 
@@ -27,14 +35,17 @@ You need BOTH to make requests. The token doesn't specify which board — it gra
 
 ## Trello API Endpoints
 
-*TODO: Research these endpoints and document the patterns*
+**Base URL:** `https://api.trello.com/1`
+**Auth:** Append `?key={apiKey}&token={token}` to all requests
+**Docs:** https://developer.atlassian.com/cloud/trello/rest/
 
-- Get all boards for user: `???`
-- Get lists on a board: `???`
-- Get cards on a list: `???`
-- Create a card: `???`
+- Get current user: `GET /members/me`
+- Get all boards for user: `GET /members/me/boards`
+- Get lists on a board: `GET /boards/{boardId}/lists`
+- Get cards on a list: `GET /lists/{listId}/cards`
+- Create a card: `POST /cards` (with listId in body)
 
-**Pattern observed:** (fill in after research)
+**Pattern observed:** Resources are nested (members → boards → lists → cards)
 
 ---
 
