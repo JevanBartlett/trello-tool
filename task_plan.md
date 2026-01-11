@@ -55,15 +55,25 @@ Done when: Your board names appear in terminal
 
 Week 2: Structure and CLI
 
- Task 1.5: Create a Trello API module
+✅ Task 1.5: Create a Trello API module
 
-Move API logic to src/trello-api.ts
+Move API logic to src/api/client.ts
 Export functions: getMe(), getBoards()
 Import and use from index.ts
 Done when: Same output, cleaner code
+**Completed:** buildURL() helper for auth, getData() for fetching, getBoards() and getMe() exported. Learned URL constructor trailing slash behavior.
 
 
- Task 1.6: Add basic CLI structure
+ Task 1.6: Add Zod schema validation
+
+Install zod
+Convert interfaces in src/types/trello.ts to Zod schemas
+Infer TypeScript types from schemas using z.infer
+Validate API responses with .parse() instead of casting
+Done when: API responses are validated at runtime, no more `as` casts
+
+
+ Task 1.7: Add basic CLI structure
 
 Install commander
 Create command: trello boards
@@ -71,14 +81,14 @@ Wire it to your getBoards() function
 Done when: npx ts-node src/index.ts boards lists your boards
 
 
- Task 1.7: Fetch lists for a board
+ Task 1.8: Fetch lists for a board
 
 Add getLists(boardId) function
 Create command: trello lists <board-id>
 Done when: You can see lists for any board
 
 
- Task 1.8: Fetch cards for a list
+ Task 1.9: Fetch cards for a list
 
 Add getCards(listId) function
 Create command: trello cards <list-id>
@@ -88,21 +98,21 @@ Done when: You can see cards in any list
 
 Week 3: Write Operations
 
- Task 1.9: Create a card
+ Task 1.10: Create a card
 
 Add createCard(listId, name, description?) function
 Create command: trello add-card <list-id> "Card name"
 Done when: Card appears in Trello UI
 
 
- Task 1.10: Move a card
+ Task 1.11: Move a card
 
 Add moveCard(cardId, targetListId) function
 Create command: trello move-card <card-id> <list-id>
 Done when: Card moves between lists
 
 
- Task 1.11: Archive a card
+ Task 1.12: Archive a card
 
 Add archiveCard(cardId) function
 Create command: trello archive-card <card-id>
@@ -112,7 +122,7 @@ Done when: Card is archived
 
 Week 4: Polish
 
- Task 1.12: Error handling
+ Task 1.13: Error handling
 
 Wrap API calls in try/catch
 Display meaningful error messages
@@ -120,7 +130,7 @@ Handle network failures gracefully
 Done when: Bad inputs show helpful errors, not stack traces
 
 
- Task 1.13: Better output formatting
+ Task 1.14: Better output formatting
 
 Format boards/lists/cards in readable columns
 Add colors with chalk (optional)
@@ -128,7 +138,7 @@ Show IDs in a way that's easy to copy
 Done when: Output is pleasant to read
 
 
- Task 1.14: Add help text
+ Task 1.15: Add help text
 
 Add descriptions to all commands
 trello --help shows useful info

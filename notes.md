@@ -15,7 +15,16 @@
 - Installed dotenv package for loading .env
 - Learned: ES modules + ts-node don't mix well; use `npm run build && npm start` instead
 - Learned: ESLint strict mode flags `any` types from response.json() — use `unknown`
-- Next: Task 1.5 - Refactor API logic into separate module (Week 2)
+
+**2025-01-10:** Task 1.5 complete - API module refactored
+- Created src/api/client.ts with buildURL(), getData(), getBoards(), getMe()
+- Learned: URL constructor trailing slash matters for relative paths:
+  - `new URL("path", "https://example.com/1")` → replaces `/1` with `path`
+  - `new URL("path", "https://example.com/1/")` → appends `path` after `/1/`
+- Added TRELLO_BASE_URL to .env (with trailing slash)
+- Using `as` casts for now, but uncomfortable with it — next task is Zod validation
+- Installed zod for runtime schema validation (Task 1.6)
+- Next: Convert interfaces to Zod schemas, remove casts
 
 ---
 

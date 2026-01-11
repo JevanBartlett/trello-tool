@@ -29,3 +29,7 @@ export interface TrelloLabel {
   name: string;
   color: string;
 }
+
+export interface TrelloMember {
+  fullName: string;
+}
