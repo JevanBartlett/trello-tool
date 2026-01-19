@@ -1,6 +1,7 @@
 // Trello API client
 // Handles authentication and HTTP requests to Trello REST API
-import type { TrelloBoard, TrelloMember } from '../types/trello.js';
+import { z } from 'zod';
+import { BoardSchema, MemberSchema, type TrelloBoard, type TrelloMember } from '../types/trello.js';
 
 function buildURL(path: string): string {
   const url = new URL(path, process.env.TRELLO_BASE_URL);
@@ -33,11 +34,10 @@ async function getData(path: string): Promise<unknown> {
 
 export async function getBoards(): Promise<TrelloBoard[]> {
   const boards = await getData('members/me/boards');
-  return boards as TrelloBoard[];
+  return z.array(BoardSchema).parse(boards);
 }
 
 export async function getMe(): Promise<TrelloMember> {
   const memberInfo = await getData('members/me');
-
-  return memberInfo as TrelloMember;
+  return MemberSchema.parse(memberInfo);
 }
