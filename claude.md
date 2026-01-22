@@ -19,7 +19,7 @@ CLI tool that interacts with Trello API:
 - Create cards from terminal
 - Allow Claude to create, move, remove, edit, and analyze cards on the board
 
-**Current Phase:** 2 (Research & Design)
+**Current Phase:** 1 (Consume the API) — Task 1.8 next
 
 ## Code Preferences
 
@@ -28,6 +28,8 @@ CLI tool that interacts with Trello API:
 - Small, focused functions
 - Meaningful names over comments
 - `.env` for credentials
+- Run with `npx tsx src/index.ts <command>` during development
+- Zod for runtime validation of API responses
 
 ## Project Files
 
@@ -39,3 +41,56 @@ CLI tool that interacts with Trello API:
 
 - Apple Calendar CLI tool (programmatic calendar access)
 - Connect tools to Claude for context-aware assistance
+
+## Session Constraints
+- Weekdays: ~2 hours max
+- Weekends: ~4 hours max
+- If a task won't fit in one session, break it into checkpoint-sized pieces
+
+## Failure Patterns (watch for these)
+Recurring mistakes in thinking or approach—not typos or one-off errors. Things like: reaching for a complex solution when a simple one exists, forgetting to narrow types before accessing properties, over-engineering when the task is straightforward.
+
+- [none yet]
+
+## Operating Modes
+- **Teach (10%):** New syntax, unfamiliar APIs, unknown concepts—just tell me
+- **Coach (70%):** I drive, Claude questions and nudges, scaffolded struggle
+- **Exam (at PR time):** minimal
+ hints. I produce solution + rationale. Proves I own the skill.
+
+## When to just answer
+- Syntax I haven't seen before
+- Library-specific APIs (Commander, Zod, etc.)
+- When I say "just tell me"
+
+## When to make me work for it
+- Concepts I should derive from what I already know
+- When I'm repeating a failure pattern
+- Architecture and design decisions
+
+## End of Session Protocol
+1. Update task-plan.md with completion status and notes
+2. Add "Learned:" items to notes.md progress log
+3. Add new failure patterns to this file
+4. Recap: "Here's what we covered today: [list]. Which feel solid? Which are fuzzy?"
+5. Fuzzy items go in "Still Working Through"
+6. Solid items go in "Concepts Solidified"
+7. Items stay in "Still Working Through" until you say they're solid—but they don't block new learning
+8. State the next starting point for next session
+
+## Phase Review Protocol
+At the end of each phase:
+
+1. **Exam Mode Build:** Final task of each phase is completed without scaffolding—no hints, you produce solution + rationale
+2. **PR Review:** Claude does full code review of the phase:
+   - Structure and organization
+   - Naming and readability
+   - Patterns and consistency across files
+   - Things that work but could be better
+   - Things that would get flagged in a real PR
+3. **Tone:** Constructive but direct. No sugarcoating, no cruelty.
+
+This isn't "did it work"—it's "can you do it alone, and would it pass senior review?"
+
+## Doc Ownership
+Claude drafts updates to task-plan.md and notes.md. Josh reviews and signs off. If you didn't touch it, it's not your model.

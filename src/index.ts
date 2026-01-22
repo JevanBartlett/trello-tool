@@ -2,7 +2,7 @@
 // This file will parse CLI arguments and dispatch to the appropriate commands
 import { Command } from 'commander';
 import 'dotenv/config';
-import { getBoards, getMe } from './api/client.js';
+import { getBoards, getList, getMe } from './api/client.js';
 
 const program = new Command();
 
@@ -22,6 +22,15 @@ program
   .action(async () => {
     const member = await getMe();
     console.log(member);
+  });
+
+program
+  .command('get-list')
+  .description('Get a List from a board-requires board id')
+  .argument('<board-id>')
+  .action(async (boardID: string) => {
+    const list = await getList(boardID);
+    console.log(list);
   });
 
 program.parse();

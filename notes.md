@@ -2,6 +2,19 @@
 
 ## Progress Log
 
+## Concepts Solidified
+- [emerges as we work]
+
+## Still Working Through
+- [emerges as we work]
+
+## Bug Journal
+When a meaningful bug occurs, log:
+- Symptom
+- Root cause  
+- How I found it
+- Prevention (test, lint rule, type, invariant)
+
 **2025-01-04:** Project setup complete
 
 - GitHub repo created: https://github.com/JevanBartlett/trello-tool
@@ -28,6 +41,25 @@
 - Using `as` casts for now, but uncomfortable with it — next task is Zod validation
 - Installed zod for runtime schema validation (Task 1.6)
 - Next: Convert interfaces to Zod schemas, remove casts
+
+**2025-01-19:** Tasks 1.6 & 1.7 complete - Zod validation and CLI structure
+
+- Task 1.6: Converted all interfaces to Zod schemas, types inferred with `z.infer<typeof Schema>`
+- Task 1.7: Installed commander, created `boards` and `get-user` commands
+- Fixed ESLint config: `recommendedTypeChecked` was applying to all files including `.mjs`
+  - Solution: Scope type-checked rules to `files: ['**/*.ts']` only
+  - Added Node.js globals (`process`) for `.mjs` files
+- Learned: `tsx` vs `tsc` build workflow:
+  - `npx tsx src/index.ts` — compiles on-the-fly, good for development
+  - `npm run build && node dist/index.js` — pre-compile, good for production
+  - TypeScript must become JavaScript before Node can run it
+  - `tsx` hides this by compiling in memory each run
+  - Production servers don't have `tsx`, so you ship compiled `dist/` folder
+- Commander basics:
+  - `new Command()` creates program instance
+  - `.command('name')` defines subcommand
+  - `.action(async () => {})` is the handler
+  - `program.parse()` reads process.argv and dispatches
 
 ---
 
