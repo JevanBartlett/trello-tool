@@ -38,6 +38,43 @@ async function getData(path: string): Promise<unknown> {
     } else {
       console.error(error);
     }
+    throw error;
+  }
+}
+
+export async function createCard(
+  listID: string,
+  cardName: string,
+  description?: string,
+): Promise<TrelloCard> {
+  const body = {
+    name: cardName,
+    idList: listID,
+    desc: description,
+  };
+
+  try {
+    const url = buildURL('cards');
+    const response: Response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const result: unknown = await response.json();
+    return CardSchema.parse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+    throw error;
   }
 }
 
