@@ -82,6 +82,23 @@ When a meaningful bug occurs, log:
 - Observation: Commands now inconsistent in naming (`boards` vs `get-user` vs `get-list` vs `get-cards`)
   - Will be addressed in Task 1.14/1.15 (formatting and help text)
 
+**2025-01-22:** Task 1.10 complete - Create a card (first write operation)
+
+- Added `createCard(listID, cardName, description?)` function with POST request
+- Learned: POST requests with fetch require method, headers, and body
+  - `method: 'POST'` - specifies HTTP method
+  - `headers: { 'Content-Type': 'application/json' }` - tells server we're sending JSON
+  - `body: JSON.stringify(body)` - converts object to JSON string
+- Created `create-card` command with multiple arguments:
+  - `.argument('<list-id>')` - required
+  - `.argument('<name>')` - required
+  - `.argument('[description]')` - optional (square brackets)
+  - Arguments map to action callback parameters in order
+- Fixed error handling: added `throw error` in catch blocks
+  - Without re-throw, functions return undefined and errors are masked
+  - With re-throw, original error propagates to caller for proper handling
+- Successfully created test card in Trello via CLI
+
 ---
 
 ## Trello API Authentication

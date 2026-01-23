@@ -90,11 +90,12 @@ Done when: You can see cards in any list
 
 Week 3: Write Operations
 
-Task 1.10: Create a card
+✅ Task 1.10: Create a card
 
 Add createCard(listId, name, description?) function
 Create command: trello add-card <list-id> "Card name"
 Done when: Card appears in Trello UI
+**Completed:** Added createCard() with POST request, JSON body, and Content-Type header. Created `create-card` command with three arguments (two required, one optional). Card successfully created in Trello.
 
 Task 1.11: Move a card
 
