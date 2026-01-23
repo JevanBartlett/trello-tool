@@ -6,7 +6,7 @@
 - [emerges as we work]
 
 ## Still Working Through
-- [emerges as we work]
+- `tsc` vs `tsx` — when to use which, what each actually does under the hood
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -60,6 +60,17 @@ When a meaningful bug occurs, log:
   - `.command('name')` defines subcommand
   - `.action(async () => {})` is the handler
   - `program.parse()` reads process.argv and dispatches
+
+**2025-01-21:** Task 1.8 complete - Fetch lists for a board
+
+- Added `getList(boardID)` function with parameterized endpoint `/boards/${boardID}/lists`
+- Created `get-list <board-id>` command using Commander's `.argument('<name>')`
+- Learned: Commander `.argument()` for positional args
+  - `<name>` = required, `[name]` = optional
+  - Value passed as first parameter to `.action()` callback
+- Reinforced: `tsc` compiles, `tsx` compiles AND runs
+  - `npx tsc src/index.ts get-list ...` fails because tsc treats args as file paths
+  - `npx tsx src/index.ts get-list ...` works because tsx runs the program
 
 ---
 

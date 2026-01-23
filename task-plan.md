@@ -74,11 +74,12 @@ Wire it to your getBoards() function
 Done when: npx ts-node src/index.ts boards lists your boards
 **Completed:** Commander installed, `boards` and `get-user` commands working. Fixed ESLint config for type-checked rules. Learned about tsx vs tsc build workflow.
 
-Task 1.8: Fetch lists for a board
+✅ Task 1.8: Fetch lists for a board
 
 Add getLists(boardId) function
 Create command: trello lists <board-id>
 Done when: You can see lists for any board
+**Completed:** Added getList(boardID) function with parameterized endpoint. Created `get-list <board-id>` command using Commander's .argument() for positional args.
 
 Task 1.9: Fetch cards for a list
 

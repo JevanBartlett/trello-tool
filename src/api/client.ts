@@ -3,9 +3,11 @@
 import { z } from 'zod';
 import {
   BoardSchema,
+  CardSchema,
   ListSchema,
   MemberSchema,
   type TrelloBoard,
+  type TrelloCard,
   type TrelloList,
   type TrelloMember,
 } from '../types/trello.js';
@@ -52,4 +54,9 @@ export async function getMe(): Promise<TrelloMember> {
 export async function getList(boardID: string): Promise<TrelloList[]> {
   const lists = await getData(`boards/${boardID}/lists`);
   return z.array(ListSchema).parse(lists);
+}
+
+export async function getCards(listID: string): Promise<TrelloCard[]> {
+  const cards = await getData(`lists/${listID}/cards`);
+  return z.array(CardSchema).parse(cards);
 }
