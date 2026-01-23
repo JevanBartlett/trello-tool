@@ -3,10 +3,15 @@
 ## Progress Log
 
 ## Concepts Solidified
-- [emerges as we work]
+- Commander multiple arguments (`.argument()` chaining, `<>` vs `[]`)
+- POST requests need method, headers, and body
+- `JSON.stringify()` converts objects to JSON strings
+- Optional TypeScript parameters (`param?: type`)
 
 ## Still Working Through
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood
+- Error re-throwing — why `throw error` in catch blocks, how errors propagate
+- POST vs GET request patterns — when to use which, what's fundamentally different
 
 ## Bug Journal
 When a meaningful bug occurs, log:
