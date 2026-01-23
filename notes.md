@@ -72,6 +72,16 @@ When a meaningful bug occurs, log:
   - `npx tsc src/index.ts get-list ...` fails because tsc treats args as file paths
   - `npx tsx src/index.ts get-list ...` works because tsx runs the program
 
+**2025-01-22:** Task 1.9 complete - Fetch cards for a list
+
+- Added `getCards(listID)` function to client.ts with endpoint `/lists/${listID}/cards`
+- Created `get-cards <list-id>` command following same pattern as get-list
+- Bug caught: Initially wrote `.command('get cards')` with space instead of hyphen
+  - Commander interprets space as nested subcommand structure
+  - Fixed to `.command('get-cards')` to match CLI convention
+- Observation: Commands now inconsistent in naming (`boards` vs `get-user` vs `get-list` vs `get-cards`)
+  - Will be addressed in Task 1.14/1.15 (formatting and help text)
+
 ---
 
 ## Trello API Authentication

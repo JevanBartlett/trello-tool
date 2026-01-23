@@ -81,11 +81,12 @@ Create command: trello lists <board-id>
 Done when: You can see lists for any board
 **Completed:** Added getList(boardID) function with parameterized endpoint. Created `get-list <board-id>` command using Commander's .argument() for positional args.
 
-Task 1.9: Fetch cards for a list
+✅ Task 1.9: Fetch cards for a list
 
 Add getCards(listId) function
 Create command: trello cards <list-id>
 Done when: You can see cards in any list
+**Completed:** Added getCards(listID) function with parameterized endpoint. Created `get-cards <list-id>` command. Tested successfully with FCO UAT board.
 
 Week 3: Write Operations
 
