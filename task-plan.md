@@ -97,11 +97,12 @@ Create command: trello add-card <list-id> "Card name"
 Done when: Card appears in Trello UI
 **Completed:** Added createCard() with POST request, JSON body, and Content-Type header. Created `create-card` command with three arguments (two required, one optional). Card successfully created in Trello.
 
-Task 1.11: Move a card
+✅ Task 1.11: Move a card
 
 Add moveCard(cardId, targetListId) function
 Create command: trello move-card <card-id> <list-id>
 Done when: Card moves between lists
+**Completed:** Added moveCard() with PUT request using URL.searchParams.set() to build query parameters. Created `move-card` command with two required arguments. Successfully tested moving cards between lists on FCO UAT board. Learned: PUT for updates vs POST for creates, searchParams.set() for building query strings safely.
 
 Task 1.12: Archive a card
 
