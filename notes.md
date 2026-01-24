@@ -7,11 +7,14 @@
 - POST requests need method, headers, and body
 - `JSON.stringify()` converts objects to JSON strings
 - Optional TypeScript parameters (`param?: type`)
+- PUT vs POST (PUT updates existing resources, POST creates new ones)
+- `URL.searchParams.set()` for building query strings safely
+- API parameter names must match documentation exactly
+- Multi-step API workflows (board → list → card ID chains)
 
 ## Still Working Through
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood
 - Error re-throwing — why `throw error` in catch blocks, how errors propagate
-- POST vs GET request patterns — when to use which, what's fundamentally different
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -103,6 +106,22 @@ When a meaningful bug occurs, log:
   - Without re-throw, functions return undefined and errors are masked
   - With re-throw, original error propagates to caller for proper handling
 - Successfully created test card in Trello via CLI
+
+**2025-01-23:** Task 1.11 complete - Move a card (PUT request)
+
+- Added `moveCard(cardId, targetListId)` function with PUT request
+- Learned: PUT vs POST — PUT updates existing resources, POST creates new ones
+- Learned: `URL.searchParams.set()` for building query strings
+  - Safer than manual string concatenation with `?` and `&`
+  - Handles URL encoding automatically (spaces, special chars, etc.)
+  - Example: `url.searchParams.set('idList', targetListId)` adds `&idList=xyz` to URL
+  - Can add multiple parameters by calling `.set()` multiple times
+- API parameter precision matters: `idList` not `listId` — must match docs exactly
+- Realized workflow friction: need board ID → list ID → card ID for operations
+  - This is awkward for humans but normal for agents/APIs
+  - Phase 2 (caching, defaults) solves human friction
+  - Phase 4 (deployment) makes it accessible from anywhere
+  - Phase 5 (LLM integration) lets Claude manage Trello autonomously
 
 ---
 
