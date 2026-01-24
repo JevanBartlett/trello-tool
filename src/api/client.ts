@@ -78,6 +78,35 @@ export async function createCard(
   }
 }
 
+export async function moveCard(cardId: string, targetListId: string): Promise<TrelloCard> {
+  try {
+    const url = new URL(`cards/${cardId}`, process.env.TRELLO_BASE_URL);
+    url.searchParams.set('key', process.env.TRELLO_API_KEY!);
+    url.searchParams.set('token', process.env.TRELLO_TOKEN!);
+    url.searchParams.set('idList', targetListId);
+
+    const response: Response = await fetch(url.toString(), {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const result: unknown = await response.json();
+    return CardSchema.parse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+    throw error;
+  }
+}
+
 export async function getBoards(): Promise<TrelloBoard[]> {
   const boards = await getData('members/me/boards');
   return z.array(BoardSchema).parse(boards);
