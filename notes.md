@@ -126,6 +126,19 @@ When a meaningful bug occurs, log:
   - Phase 4 (deployment) makes it accessible from anywhere
   - Phase 5 (LLM integration) lets Claude manage Trello autonomously
 
+**2025-01-23:** Task 1.12 complete - Archive a card
+
+- Added `archiveCard(cardId)` function with PUT request and `{closed: 'true'}` parameter
+- Learned: Deep vs shallow modules (Ousterhout's philosophy)
+  - Deep module: simple interface, hides complexity (archiveCard)
+  - Shallow module: complex interface, exposes details (updateCard with params)
+  - Chose archiveCard over generic updateCard — caller doesn't need to know about `closed` parameter
+  - Follow the spec: task plan asked for archiveCard, not a generic function
+- Refactored buildURL() during code review to accept optional params
+  - Extended helper to eliminate code duplication in moveCard
+  - Used `Object.entries()` and array destructuring in for loop
+  - Pattern: `for (const [key, value] of Object.entries(params))`
+
 ---
 
 ## Trello API Authentication

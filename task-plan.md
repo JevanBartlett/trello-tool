@@ -104,11 +104,12 @@ Create command: trello move-card <card-id> <list-id>
 Done when: Card moves between lists
 **Completed:** Added moveCard() with PUT request using URL.searchParams.set() to build query parameters. Created `move-card` command with two required arguments. Successfully tested moving cards between lists on FCO UAT board. Learned: PUT for updates vs POST for creates, searchParams.set() for building query strings safely.
 
-Task 1.12: Archive a card
+✅ Task 1.12: Archive a card
 
 Add archiveCard(cardId) function
 Create command: trello archive-card <card-id>
 Done when: Card is archived
+**Completed:** Added archiveCard() with PUT request and {closed: 'true'} parameter. Created archive-card CLI command with one required argument. Successfully tested - archived card removed from active list view. Learned: Chose focused function (archiveCard) over generic updateCard for better interface clarity (deep modules principle).
 
 Week 4: Polish
 
