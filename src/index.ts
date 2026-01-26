@@ -2,7 +2,15 @@
 // This file will parse CLI arguments and dispatch to the appropriate commands
 import { Command } from 'commander';
 import 'dotenv/config';
-import { createCard, getBoards, getCards, getList, getMe, moveCard } from './api/client.js';
+import {
+  archiveCard,
+  createCard,
+  getBoards,
+  getCards,
+  getList,
+  getMe,
+  moveCard,
+} from './api/client.js';
 
 const program = new Command();
 
@@ -60,6 +68,15 @@ program
   .argument('<targetListId>')
   .action(async (cardId: string, targetListId: string) => {
     const card = await moveCard(cardId, targetListId);
+    console.log(card);
+  });
+
+program
+  .command('archive-card')
+  .description('archive a card.  Requires: cardId')
+  .argument('<cardId>')
+  .action(async (cardId: string) => {
+    const card = await archiveCard(cardId);
     console.log(card);
   });
 

@@ -109,6 +109,31 @@ export async function moveCard(cardId: string, targetListId: string): Promise<Tr
   }
 }
 
+export async function archiveCard(cardId: string): Promise<TrelloCard> {
+  try {
+    const url = buildURL(`cards/${cardId}`, { closed: 'true' });
+    const response: Response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const result: unknown = await response.json();
+    return CardSchema.parse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+    throw error;
+  }
+}
+
 export async function getBoards(): Promise<TrelloBoard[]> {
   const boards = await getData('members/me/boards');
   return z.array(BoardSchema).parse(boards);
