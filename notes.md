@@ -15,6 +15,9 @@
 ## Still Working Through
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood
 - Error re-throwing — why `throw error` in catch blocks, how errors propagate
+- TypeScript utility types — `Record<K, V>`, what others exist, when to use them
+- `Object.entries()` — what it returns, how to use it
+- Array destructuring in loops — `for (const [key, value] of ...)`
 
 ## Bug Journal
 When a meaningful bug occurs, log:

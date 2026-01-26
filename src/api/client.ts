@@ -12,12 +12,18 @@ import {
   type TrelloMember,
 } from '../types/trello.js';
 
-function buildURL(path: string): string {
+function buildURL(path: string, params?: Record<string, string>): string {
   const url = new URL(path, process.env.TRELLO_BASE_URL);
   const apiKey = process.env.TRELLO_API_KEY;
   const token = process.env.TRELLO_TOKEN;
   url.searchParams.set('key', apiKey!);
   url.searchParams.set('token', token!);
+
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
 
   return url.toString();
 }
@@ -80,12 +86,8 @@ export async function createCard(
 
 export async function moveCard(cardId: string, targetListId: string): Promise<TrelloCard> {
   try {
-    const url = new URL(`cards/${cardId}`, process.env.TRELLO_BASE_URL);
-    url.searchParams.set('key', process.env.TRELLO_API_KEY!);
-    url.searchParams.set('token', process.env.TRELLO_TOKEN!);
-    url.searchParams.set('idList', targetListId);
-
-    const response: Response = await fetch(url.toString(), {
+    const url = buildURL(`cards/${cardId}`, { idList: targetListId });
+    const response: Response = await fetch(url, {
       method: 'PUT',
       headers: {
         Accept: 'application/json',
