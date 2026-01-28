@@ -11,6 +11,7 @@ import {
   type TrelloList,
   type TrelloMember,
 } from '../types/trello.js';
+import { TrelloApiError } from './errors.js';
 
 function buildURL(path: string, params?: Record<string, string>): string {
   const url = new URL(path, process.env.TRELLO_BASE_URL);
@@ -29,23 +30,12 @@ function buildURL(path: string, params?: Record<string, string>): string {
 }
 
 async function getData(path: string): Promise<unknown> {
-  try {
-    const url = buildURL(path);
-    const response: Response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-
-    const result: unknown = await response.json();
-    return result;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-    } else {
-      console.error(error);
-    }
-    throw error;
+  const url = buildURL(path);
+  const response: Response = await fetch(url);
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
   }
+  return response.json();
 }
 
 export async function createCard(
@@ -58,80 +48,55 @@ export async function createCard(
     idList: listID,
     desc: description,
   };
-
-  try {
-    const url = buildURL('cards');
-    const response: Response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-
-    const result: unknown = await response.json();
-    return CardSchema.parse(result);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-    } else {
-      console.error(error);
-    }
-    throw error;
+  const path = 'cards';
+  const url = buildURL(path);
+  const response: Response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
   }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
 }
 
 export async function moveCard(cardId: string, targetListId: string): Promise<TrelloCard> {
-  try {
-    const url = buildURL(`cards/${cardId}`, { idList: targetListId });
-    const response: Response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-
-    const result: unknown = await response.json();
-    return CardSchema.parse(result);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-    } else {
-      console.error(error);
-    }
-    throw error;
+  const path = `cards/${cardId}`;
+  const url = buildURL(path, { idList: targetListId });
+  const response: Response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
   }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
 }
 
 export async function archiveCard(cardId: string): Promise<TrelloCard> {
-  try {
-    const url = buildURL(`cards/${cardId}`, { closed: 'true' });
-    const response: Response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-
-    const result: unknown = await response.json();
-    return CardSchema.parse(result);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-    } else {
-      console.error(error);
-    }
-    throw error;
+  const path = `cards/${cardId}`;
+  const url = buildURL(path, { closed: 'true' });
+  const response: Response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
   }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
 }
 
 export async function getBoards(): Promise<TrelloBoard[]> {

@@ -338,14 +338,585 @@ Something will break. Find it. Fix it.
 Document what went wrong and how you found it
 Done when: You've solved a real production issue
 
-Project Complete.
+# Task Plan — Personal Automation CLI + MCP Server
 
-Maintenance Notes
-After completing all phases:
+**Working name:** `ctx`  
+> You're no longer building a Trello-only CLI. Namespace commands: `ctx trello …`, `ctx google …`, `ctx gmail …`, `ctx notes …`
 
-You've built something real
-You've touched all 8 core skills
-You have a reference project for future work
-The tool is actually useful
+---
 
-Keep it running. Keep improving it. The learning doesn't stop.
+## Global Non-Negotiables (apply to all phases)
+
+### Security
+- Token files & configs stored under `~/.ctx/`
+- All secrets files: `chmod 600`
+- No tokens in logs. Ever.
+- Default mode for "agent writes" is **append-only** unless explicitly enabled.
+
+### Observability
+- Every tool invocation logged:
+  - timestamp, actor (cli/api/mcp), operation, target, success/failure, error msg
+- Structured error format everywhere:
+  - `{ success: false, code, message, hint, details? }`
+
+### Timezones
+- CLI inputs interpreted in **local timezone** by default.
+- Outbound requests use RFC3339 with explicit timezone offsets.
+
+---
+
+# Phase 6: Google Calendar Integration
+**Skills:** OAuth2 (Installed App), token refresh, timezone policy, Google APIs
+
+## Week 13: OAuth2 Foundation
+
+### Task 6.1 — Google Cloud Setup (Installed App)
+- Create project in Google Cloud Console
+- Enable **Google Calendar API**
+- Configure consent screen
+- Create OAuth2 credentials as **Desktop / Installed App**
+- Done when:
+  - You have credentials downloaded as JSON
+  - You've configured redirect support for loopback localhost flow
+
+### Task 6.2 — Implement OAuth2 loopback flow
+- Install `googleapis`
+- Create `src/auth/google.ts`
+- Implement:
+  - Authorization URL generation with:
+    - `access_type=offline`
+    - `prompt=consent` (first-time auth to ensure refresh token)
+  - Local callback server (loopback redirect)
+  - Exchange code -> tokens
+- Done when:
+  - You can get an access token via browser flow
+  - You have a refresh token (first-time flow)
+
+### Task 6.3 — Token persistence + refresh
+- Save tokens to `~/.ctx/google-tokens.json`
+- Enforce `chmod 600`
+- Implement automatic refresh on expiry
+- Done when:
+  - Tokens persist across sessions
+  - Refresh happens without user intervention
+
+### Task 6.4 — CLI auth command
+- `ctx google login`
+- Opens browser, handles callback via local server
+- Done when:
+  - User can authenticate with one command end-to-end
+
+## Week 14: Calendar Read Operations
+
+### Task 6.5 — List calendars
+- Add `getCalendars()` in `src/api/google-calendar.ts`
+- CLI: `ctx google calendars`
+- Done when:
+  - Calendars appear with `id`, `summary`, `primary?`
+
+### Task 6.6 — Get events (with timezone policy)
+- Add `getEvents(calendarId, timeMin, timeMax)`
+- CLI: `ctx google events [calendar-id] --from <date> --to <date>`
+- Print local times by default
+- Done when:
+  - Events display with correct local times vs Calendar UI
+
+### Task 6.7 — Search events
+- Add `searchEvents(query, timeMin?, timeMax?)`
+- CLI: `ctx google events-search "keyword" [--from] [--to]`
+- Done when:
+  - Can find events by text search reliably
+
+## Week 15: Calendar Write Operations
+
+### Task 6.8 — Create event
+- Add `createEvent(calendarId, event)`
+- CLI: `ctx google add-event "Title" --date <date> --time <time> --duration <minutes> [--location] [--notes]`
+- Done when:
+  - Event appears in Google Calendar and can be fetched by your CLI
+
+### Task 6.9 — Update event
+- Add `updateEvent(calendarId, eventId, updates)`
+- CLI: `ctx google update-event <event-id> [--title] [--date] [--time] [--duration]`
+- Done when:
+  - Can modify existing events without clobbering other fields
+
+### Task 6.10 — Delete event
+- Add `deleteEvent(calendarId, eventId)`
+- CLI: `ctx google delete-event <event-id>`
+- Done when:
+  - Events can be removed and disappear from subsequent fetches
+
+## Week 16: Calendar Polish
+
+### Task 6.11 — Default calendar config
+- Add default calendar to config file
+- Commands work without specifying calendar ID
+- Done when:
+  - `ctx google events --from --to` uses default calendar
+
+### Task 6.12 — Recurring events
+- Step 1: Display RRULE and recurrence info
+- Step 2: Create "simple weekly" recurrence
+- Done when:
+  - You can create weekly/monthly recurring events and display recurrence info
+
+### Task 6.13 — Add calendar endpoints to REST API
+- GET `/calendars`
+- GET `/calendars/:id/events`
+- POST `/calendars/:id/events`
+- PUT `/events/:id`
+- DELETE `/events/:id`
+- Done when:
+  - Full calendar CRUD via HTTP with consistent errors/logging
+
+**Phase 6 Complete Checkpoint:** You can manage Google Calendar from CLI and API.
+
+---
+
+# Phase 7: Gmail Integration
+**Skills:** Gmail API, MIME/RFC 2822, threading headers, search operators
+
+## Week 17: Gmail Auth & Reading
+
+### Task 7.1 — Enable Gmail API + incremental scopes
+- Enable Gmail API in Google Cloud
+- Add Gmail scope(s) to OAuth flow
+- Force re-auth to grant Gmail permissions
+- Done when:
+  - Token has Gmail access (verified by calling an endpoint)
+
+### Task 7.2 — List messages
+- Add `getMessages(query, maxResults, pageToken?)` in `src/api/gmail.ts`
+- CLI: `ctx gmail emails [--from] [--subject] [--unread] [--max N]`
+- Done when:
+  - Can list recent emails with filters + pagination
+
+### Task 7.3 — Read message (MIME parsing)
+- Add `getMessage(messageId)`
+- Parse plain text + HTML parts
+- CLI: `ctx gmail email <message-id>`
+- Done when:
+  - Can read full email content reliably
+
+### Task 7.4 — Search emails (Gmail operators)
+- Implement raw Gmail search operators
+- CLI: `ctx gmail search "from:boss subject:(uat) newer_than:7d"`
+- Done when:
+  - Can use Gmail-style search from CLI
+
+## Week 18: Gmail Write Ops
+
+### Task 7.5 — Send email (RFC 2822 raw)
+- Add `sendEmail(to, subject, body)`
+- Build RFC 2822 message, base64url encode, send via Gmail
+- CLI: `ctx gmail send <to> --subject "Subject" --body "Body"`
+- Done when:
+  - Can send plain text emails that arrive correctly
+
+### Task 7.6 — Reply to email (thread correctly)
+- Add `replyToEmail(messageId, body)`
+- MUST set:
+  - `threadId`
+  - RFC 2822 headers: `In-Reply-To`, `References`
+- CLI: `ctx gmail reply <message-id> --body "Reply"`
+- Done when:
+  - Replies thread correctly in Gmail
+
+### Task 7.7 — Drafts
+- Add `createDraft()`, `getDrafts()`, `sendDraft()`
+- CLI: `ctx gmail drafts`, `ctx gmail create-draft`, `ctx gmail send-draft <draft-id>`
+- Done when:
+  - Can manage drafts from CLI
+
+## Week 19: Gmail Polish
+
+### Task 7.8 — Labels
+- Add `getLabels()`, `addLabel()`, `removeLabel()`
+- CLI: `ctx gmail label <message-id> <label>`
+- Done when:
+  - Can organize emails with labels
+
+### Task 7.9 — Attachments
+- Handle attachment downloads in `getMessage()`
+- Save to local directory
+- CLI: `ctx gmail email <message-id> --save-attachments [--out ./attachments]`
+- Done when:
+  - Can download email attachments reliably
+
+### Task 7.10 — Gmail REST endpoints
+- GET `/emails`
+- GET `/emails/:id`
+- POST `/emails/send`
+- POST `/emails/:id/reply`
+- Done when:
+  - Email operations available via HTTP
+
+**Phase 7 Complete Checkpoint:** You can read and send email from CLI and API.
+
+---
+
+# Phase 8: Notes Gateway (File-First Vault + Always-On Agent Access)
+**Skills:** File IO, indexing/search, append-only writing, conflict handling, auth, audit logs
+
+## Hosting Decision (Choose Before Starting)
+
+The Notes Gateway runs 24/7. You have two options:
+
+### Option A: Cloud Container (Recommended for you)
+- Deploy to Fly.io, Railway, or Render (free/cheap tiers available)
+- Same Docker skills from Phase 4
+- Requires solving vault sync (see Task 8.1)
+
+### Option B: Home Server
+- Mac mini / Linux mini PC / NAS
+- No sync needed—vault is local
+- Requires hardware, networking, maintenance
+
+**Recommendation:** Start with Option A. You're already learning Docker. Add home server later if cloud limits frustrate you.
+
+---
+
+## Week 20: Vault + Gateway Foundations
+
+### Task 8.1 — Vault location + sync strategy
+Choose one:
+
+**Option 1: Git-based sync (recommended)**
+- Vault is a Git repo
+- Container clones repo, pulls before reads, commits+pushes after writes
+- You get version history for free
+- Edit locally, push; container pulls latest
+
+**Option 2: Cloud storage mount**
+- Vault in Dropbox/Google Drive
+- Container mounts via rclone or similar
+- More fragile, sync conflicts possible
+
+**Option 3: Vault lives in container only**
+- No local Obsidian editing
+- All edits via API or web UI
+- Simplest architecture, worst UX
+
+Done when:
+- You've chosen an approach and documented it
+- Vault folder exists with structure: `Daily/`, `Projects/`, `People/`, `Inbox/`
+- README in vault root explains conventions
+
+### Task 8.2 — Notes Gateway service scaffold
+- Create `src/notes-gateway/server.ts`
+- Add REST auth (API key header)
+- Add audit log file: `~/.ctx/audit.log` (or container-appropriate path)
+- Done when:
+  - Server runs and requires API key
+  - Requests log to audit file
+
+### Task 8.3 — Core note operations (append-first)
+Implement:
+- `createNote(path, title?, content?)`
+- `getNote(path)`
+- `appendToNote(path, content, heading?)`
+- `listNotes(prefixPath?)`
+
+Done when:
+- You can create/read/append/list without data loss
+- Append does NOT rewrite existing content
+
+## Week 21: Search + Safety
+
+### Task 8.4 — Fast search
+- Implement search via `ripgrep` (shell) or Node equivalent
+- Endpoint: `GET /notes/search?q=...`
+- Done when:
+  - Search returns results with file + line snippets quickly
+
+### Task 8.5 — Safety guardrails
+- Allowlist vault root (no path traversal)
+- Hard limit note size and append size
+- Optional denylist patterns (e.g., never expose `Banking/`, `Medical/`)
+- Done when:
+  - Attempts to access outside vault fail safely
+  - Sensitive folders are protected
+
+### Task 8.6 — Conflict strategy (if using sync)
+- If vault is synced (Git/cloud), define behavior:
+  - Git: pull before read, commit+push after write
+  - If conflict detected -> write to `Conflicts/` + log
+- Done when:
+  - Conflicts don't silently destroy content
+
+## Week 22: Agent-Friendly Features
+
+### Task 8.7 — Templates for agent output
+- Standard sections:
+  - `## Agent Findings`
+  - `## Decisions`
+  - `## Next Actions`
+- Endpoint supports `heading="Agent Findings"` for targeted append
+- Done when:
+  - Agents always append into predictable sections
+
+### Task 8.8 — Optional: embeddings index
+- Create local vector index (lightweight, e.g., using sqlite-vss)
+- Endpoint: `GET /notes/semantic?q=...`
+- Skip if not needed—ripgrep may be enough
+- Done when:
+  - Semantic search works without shipping data to external services
+
+### Task 8.9 — Notes REST API completeness
+- GET `/notes` — list notes
+- GET `/notes/:path` — read note
+- POST `/notes` — create note
+- PATCH `/notes/:path/append` — append to note
+- GET `/notes/search` — text search
+- Done when:
+  - Notes fully manageable via HTTP with safe defaults
+
+### Task 8.10 — Obsidian integration (optional)
+- Use Obsidian as UI on top of vault folder (if using Git sync)
+- Gateway and Obsidian both read/write same Markdown files
+- Done when:
+  - You can edit notes in Obsidian while agents use the gateway
+
+**Phase 8 Complete Checkpoint:** You have an always-on service that safely exposes your Markdown vault to agents.
+
+---
+
+# Phase 9: Playwright Action Primitives
+**Skills:** Browser automation, selector strategies, error recovery, action abstraction
+
+## Week 23: Playwright Foundation
+
+### Task 9.1 — Set up Playwright module
+- Create `src/browser/index.ts`
+- Initialize browser instance management
+- Handle headless/headed modes
+- Done when:
+  - Can launch and close browser programmatically
+
+### Task 9.2 — Navigation primitives
+- `goToUrl(url)` — navigate and wait for load
+- `getCurrentUrl()` — return current URL
+- `goBack()`, `goForward()`, `refresh()`
+- Done when:
+  - Basic navigation works reliably
+
+### Task 9.3 — Page reading primitives
+- `getPageText()` — extract visible text
+- `getPageTitle()` — return title
+- `screenshot()` — capture current state
+- `getElementText(selector)` — text from specific element
+- Done when:
+  - Can extract information from pages
+
+## Week 24: Interaction Primitives
+
+### Task 9.4 — Click and type
+- `click(selector)` — click element with auto-wait
+- `type(selector, text)` — type into input
+- `clear(selector)` — clear input field
+- `pressKey(key)` — keyboard actions
+- Done when:
+  - Basic interactions work with proper waiting
+
+### Task 9.5 — Form handling
+- `fillForm(fields)` — fill multiple fields at once
+- `selectOption(selector, value)` — dropdowns
+- `checkBox(selector, checked)` — checkboxes
+- `submitForm(selector?)` — submit form
+- Done when:
+  - Can fill and submit arbitrary forms
+
+### Task 9.6 — Waiting strategies
+- `waitForElement(selector, options)` — wait for element
+- `waitForNavigation()` — wait for page load
+- `waitForText(text)` — wait for text to appear
+- `waitForNetworkIdle()` — wait for requests to settle
+- Done when:
+  - Robust waiting for dynamic pages
+
+## Week 25: Advanced Primitives
+
+### Task 9.7 — Data extraction
+- `extractTable(selector)` — table to JSON
+- `extractLinks(selector?)` — all links on page
+- `extractStructuredData(schema)` — extract data matching schema
+- Done when:
+  - Can pull structured data from pages
+
+### Task 9.8 — Error handling and recovery
+- Wrap all primitives in try/catch
+- Return structured results: `{ success, data?, error?, screenshotPath? }`
+- Auto-screenshot on failure
+- Done when:
+  - Failures are informative, not crashes
+
+### Task 9.9 — Session management
+- `saveCookies(path)`, `loadCookies(path)`
+- Handle login persistence
+- Done when:
+  - Can maintain logged-in sessions
+
+## Week 26: Playwright API Layer
+
+### Task 9.10 — CLI commands for browser
+- `ctx browser open <url>` — open and screenshot
+- `ctx browser text <url>` — extract text
+- `ctx browser form <url> --data '{...}'` — fill form
+- Done when:
+  - Browser actions available from CLI
+
+### Task 9.11 — REST endpoints for browser
+- POST `/browser/navigate` `{ url }`
+- GET `/browser/screenshot`
+- POST `/browser/click` `{ selector }`
+- POST `/browser/type` `{ selector, text }`
+- POST `/browser/form` `{ url, fields }`
+- POST `/browser/extract` `{ url, schema }`
+- Done when:
+  - Browser automation available via HTTP
+
+### Task 9.12 — Safety guardrails
+- URL allowlist/blocklist configuration
+- Timeout limits on all operations
+- No access to sensitive domains by default (banks, medical portals, etc.)
+- Done when:
+  - Playwright can't accidentally access dangerous sites
+
+**Phase 9 Complete Checkpoint:** You have browser automation primitives any client can invoke safely.
+
+---
+
+# Phase 10: MCP Compliance
+**Skills:** Protocol implementation, tool schema design, context management
+
+## Week 27: MCP Foundation
+
+### Task 10.1 — Study MCP spec + choose stable SDK
+- Read Anthropic's MCP documentation thoroughly
+- Pin **v1.x** of MCP SDK until v2 stabilizes
+- Done when:
+  - Can explain MCP handshake and tool invocation flow
+
+### Task 10.2 — MCP server scaffold
+- Install MCP SDK (`@modelcontextprotocol/sdk` or equivalent)
+- Create `src/mcp/server.ts`
+- Implement discovery endpoint
+- Done when:
+  - MCP client can connect and list tools (even if empty)
+
+### Task 10.3 — Tool schemas (grouped by domain)
+- Trello tools
+- Calendar tools
+- Gmail tools
+- Notes Gateway tools
+- Browser tools
+- Done when:
+  - Schema file covers all operations with params, returns, examples
+
+## Week 28: Tool Migration
+
+### Task 10.4 — Trello tools via MCP
+- Wrap existing Trello functions as MCP tools
+- Done when:
+  - LLM can list boards, create/move/archive cards via MCP
+
+### Task 10.5 — Calendar tools via MCP
+- Wrap Google Calendar functions as MCP tools
+- Done when:
+  - LLM can list calendars, read/create events via MCP
+
+### Task 10.6 — Gmail tools via MCP
+- Wrap Gmail functions as MCP tools
+- Done when:
+  - LLM can search/read/send email via MCP
+
+### Task 10.7 — Notes tools via MCP (append-first)
+- Expose only safe defaults:
+  - `notes.search`
+  - `notes.get`
+  - `notes.create`
+  - `notes.append` (no full rewrite by default)
+- Done when:
+  - LLM can manage notes without destructive edits
+
+### Task 10.8 — Browser tools via MCP (guardrailed)
+- Expose Playwright primitives with safety checks
+- Done when:
+  - LLM can automate allowed URLs safely
+
+## Week 29: Context + Polish
+
+### Task 10.9 — Context injection
+- Provide useful defaults on connection:
+  - Default board/calendar/notebook IDs
+  - Common note paths (Inbox, Daily)
+  - User timezone
+- Done when:
+  - LLM has helpful context without oversharing
+
+### Task 10.10 — Error standardization
+- One error format across all MCP tools
+- Errors include actionable information
+- Done when:
+  - Failures are consistent and debuggable
+
+### Task 10.11 — Logging + observability
+- Log all tool invocations with timestamps
+- Track success/failure rates
+- Done when:
+  - You can audit what the LLM did
+
+### Task 10.12 — End-to-end workflow testing
+Test multi-tool workflows:
+- "Create calendar event, then append prep checklist to Daily note"
+- "Search email, extract action items, create Trello card"
+- "Check website, summarize findings, email summary to self"
+- Done when:
+  - Complex workflows complete reliably
+
+**Phase 10 Complete Checkpoint:** You have a fully MCP-compliant personal automation server.
+
+---
+
+# Project Complete
+
+## What You've Built
+A personal MCP server exposing:
+- **Trello** — task management
+- **Google Calendar** — scheduling
+- **Gmail** — communication
+- **Notes Gateway** — knowledge/notes (Markdown files you own)
+- **Playwright** — browser automation
+
+Any MCP-compliant LLM can orchestrate your digital life.
+
+## What You've Learned
+- HTTP client and server development
+- OAuth2 and API authentication
+- Database persistence and caching
+- File-based data management
+- Protocol implementation (MCP)
+- Browser automation
+- Deployment and containerization
+- Security practices (token handling, audit logs, guardrails)
+- Error handling and observability
+- API design and documentation
+
+## Timeline
+| Phases | Weeks |
+|--------|-------|
+| 1-5 (Trello CLI + API + Deploy) | ~15 |
+| 6-10 (Calendar, Gmail, Notes, Playwright, MCP) | ~17 |
+| **Total** | **~32 weeks** |
+
+With life friction (family, work chaos, energy dips): **40-45 weeks**. Under a year.
+
+## Maintenance Notes
+- Keep dependencies pinned; upgrade intentionally
+- Back up `~/.ctx/` (configs, tokens, audit logs)
+- Back up your notes vault (Git handles this if you chose Option 1)
+- Review safety allowlist/denylist quarterly
+- Rotate API keys periodically
+- Monitor for Google API deprecations
+- The learning doesn't stop—extend as your needs evolve

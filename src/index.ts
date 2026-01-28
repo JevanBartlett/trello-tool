@@ -11,6 +11,7 @@ import {
   getMe,
   moveCard,
 } from './api/client.js';
+import { TrelloApiError } from './api/errors.js';
 
 const program = new Command();
 
@@ -20,16 +21,34 @@ program
   .command('boards')
   .description('List all your Trello boards')
   .action(async () => {
-    const boards = await getBoards();
-    console.log(boards);
+    try {
+      const boards = await getBoards();
+      console.log(boards);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
   .command('get-user')
   .description('Get User Info')
   .action(async () => {
-    const member = await getMe();
-    console.log(member);
+    try {
+      const member = await getMe();
+      console.log(member);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
@@ -37,8 +56,17 @@ program
   .description('Get a List from a board-requires board id')
   .argument('<board-id>')
   .action(async (boardID: string) => {
-    const list = await getList(boardID);
-    console.log(list);
+    try {
+      const list = await getList(boardID);
+      console.log(list);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
@@ -46,8 +74,17 @@ program
   .description('get all cards in a list')
   .argument('<list-id>')
   .action(async (listID: string) => {
-    const cards = await getCards(listID);
-    console.log(cards);
+    try {
+      const cards = await getCards(listID);
+      console.log(cards);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
@@ -57,8 +94,17 @@ program
   .argument('<name>')
   .argument('[description]')
   .action(async (listID: string, cardName: string, description?: string) => {
-    const card = await createCard(listID, cardName, description);
-    console.log(card);
+    try {
+      const card = await createCard(listID, cardName, description);
+      console.log(card);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
@@ -67,8 +113,17 @@ program
   .argument('<cardId>')
   .argument('<targetListId>')
   .action(async (cardId: string, targetListId: string) => {
-    const card = await moveCard(cardId, targetListId);
-    console.log(card);
+    try {
+      const card = await moveCard(cardId, targetListId);
+      console.log(card);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program
@@ -76,8 +131,17 @@ program
   .description('archive a card.  Requires: cardId')
   .argument('<cardId>')
   .action(async (cardId: string) => {
-    const card = await archiveCard(cardId);
-    console.log(card);
+    try {
+      const card = await archiveCard(cardId);
+      console.log(card);
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
   });
 
 program.parse();
