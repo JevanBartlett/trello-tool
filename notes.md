@@ -18,6 +18,11 @@
 - TypeScript utility types — `Record<K, V>`, what others exist, when to use them
 - `Object.entries()` — what it returns, how to use it
 - Array destructuring in loops — `for (const [key, value] of ...)`
+- Custom error classes — `extends Error`, public constructor params, calling `super()`
+- Error handling architecture — where to throw (API layer) vs where to catch (CLI layer)
+- `instanceof` for type-checking — how it works with class hierarchies
+- `console.error()` vs `console.log()` — stderr vs stdout separation
+- Separation of concerns — API module throws structured errors, CLI formats for user
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -138,6 +143,21 @@ When a meaningful bug occurs, log:
   - Extended helper to eliminate code duplication in moveCard
   - Used `Object.entries()` and array destructuring in for loop
   - Pattern: `for (const [key, value] of Object.entries(params))`
+
+**2025-01-27:** Task 1.13 complete - Error handling
+
+- Created custom `TrelloApiError` class in `src/api/errors.ts`
+  - Extends built-in `Error` class
+  - Uses TypeScript constructor shorthand: `public statusCode: number` declares + assigns
+  - `super(message)` passes message to parent Error class
+- Refactored API client to throw structured errors, removed try/catch
+  - Error handling happens in CLI layer, not API layer
+  - Security: use `path` in error messages, not `url` (which contains credentials)
+- Added try/catch to all CLI commands in index.ts
+  - `instanceof TrelloApiError` checks type at runtime
+  - `console.error()` writes to stderr (separate from stdout output)
+  - `process.exit(1)` signals failure to shell
+- Tested: bad input now shows `Error: Request to boards/abc123/lists failed (status 400)` instead of stack trace
 
 ---
 
