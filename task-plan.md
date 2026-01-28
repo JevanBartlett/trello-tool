@@ -113,12 +113,13 @@ Done when: Card is archived
 
 Week 4: Polish
 
-Task 1.13: Error handling
+✅ Task 1.13: Error handling
 
 Wrap API calls in try/catch
 Display meaningful error messages
 Handle network failures gracefully
 Done when: Bad inputs show helpful errors, not stack traces
+**Completed:** Created TrelloApiError custom class with statusCode and endpoint properties. API client throws structured errors. CLI catches errors and shows clean messages (no stack traces). Learned: custom error classes (extends Error, public constructor params), instanceof for type checking, process.exit(1) for signaling failure, console.error for stderr.
 
 Task 1.14: Better output formatting
 
