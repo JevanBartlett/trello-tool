@@ -19,7 +19,7 @@ CLI tool that interacts with Trello API:
 - Create cards from terminal
 - Allow Claude to create, move, remove, edit, and analyze cards on the board
 
-**Current Phase:** 1 (Consume the API) — Task 1.8 next
+**Current Phase:** 1 (Consume the API) — Task 1.15 or 1.16 next
 
 ## Code Preferences
 
@@ -77,6 +77,11 @@ Recurring mistakes in thinking or approach—not typos or one-off errors. Things
 6. Solid items go in "Concepts Solidified"
 7. Items stay in "Still Working Through" until you say they're solid—but they don't block new learning
 8. State the next starting point for next session
+
+## Terminal Commands
+- Walk me through terminal/bash commands instead of just running them
+- Explain what each command does before executing
+- I want to learn the workflow, not just have it done for me
 
 ## Phase Review Protocol
 At the end of each phase:
