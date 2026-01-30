@@ -121,18 +121,26 @@ Handle network failures gracefully
 Done when: Bad inputs show helpful errors, not stack traces
 **Completed:** Created TrelloApiError custom class with statusCode and endpoint properties. API client throws structured errors. CLI catches errors and shows clean messages (no stack traces). Learned: custom error classes (extends Error, public constructor params), instanceof for type checking, process.exit(1) for signaling failure, console.error for stderr.
 
-Task 1.14: Better output formatting
+✅ Task 1.14: Better output formatting
 
 Format boards/lists/cards in readable columns
 Add colors with chalk (optional)
 Show IDs in a way that's easy to copy
 Done when: Output is pleasant to read
+**Completed:** Added chalk for colors. Read commands display formatted columns with headers. Write commands show clean success messages with card name and ID. Learned: `padEnd()` for column alignment, `?.` optional chaining, `??` nullish coalescing, operator precedence with `??`.
 
 Task 1.15: Add help text
 
 Add descriptions to all commands
 trello --help shows useful info
 Done when: A stranger could figure out how to use it
+
+Task 1.16: Due date manipulation
+
+Add `--due` option to create-card command
+Add `set-due` command to update due date on existing card
+Add `clear-due` command to remove due date
+Done when: Can create cards with due dates and modify due dates on existing cards
 
 Phase 1 Complete Checkpoint: You have a working CLI that can read and write to Trello.
 

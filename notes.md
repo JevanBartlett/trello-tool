@@ -23,6 +23,8 @@
 - `instanceof` for type-checking — how it works with class hierarchies
 - `console.error()` vs `console.log()` — stderr vs stdout separation
 - Separation of concerns — API module throws structured errors, CLI formats for user
+- `?.` optional chaining — short-circuits to undefined when left side is null
+- `??` nullish coalescing — fallback for null/undefined, watch operator precedence
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -158,6 +160,21 @@ When a meaningful bug occurs, log:
   - `console.error()` writes to stderr (separate from stdout output)
   - `process.exit(1)` signals failure to shell
 - Tested: bad input now shows `Error: Request to boards/abc123/lists failed (status 400)` instead of stack trace
+
+**2025-01-29:** Task 1.14 complete - Better output formatting
+
+- Installed chalk for terminal colors
+- Learned `padEnd(width)` for aligning columns
+  - Calculate max length of each column's data
+  - Add padding (e.g., +4) for spacing between columns
+  - Each column gets its own width
+- Learned `?.` (optional chaining) — short-circuits to `undefined` if left side is null
+- Learned `??` (nullish coalescing) — provides fallback when value is `null` or `undefined`
+- Operator precedence gotcha: `value ?? fallback.method()` — method runs first!
+  - Need parentheses: `(value ?? fallback).method()`
+- Chalk + padEnd interaction: pad the string BEFORE coloring
+  - Wrong: `chalk.white('NAME').padEnd(width)` — pads ANSI codes too
+  - Right: `chalk.white('NAME'.padEnd(width))` — pads raw string, then colors
 
 ---
 
