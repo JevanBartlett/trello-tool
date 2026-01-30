@@ -1,5 +1,6 @@
 // Entry point - wires CLI, API, and formatters together
 // This file will parse CLI arguments and dispatch to the appropriate commands
+import chalk from 'chalk';
 import { Command } from 'commander';
 import 'dotenv/config';
 import {
@@ -18,12 +19,20 @@ const program = new Command();
 program.name('trello').description('CLI tool for interacting with Trello Api').version('0.1.0');
 
 program
-  .command('boards')
+  .command('get-boards')
   .description('List all your Trello boards')
   .action(async () => {
     try {
       const boards = await getBoards();
-      console.log(boards);
+
+      const maxLength = Math.max(...boards.map((b) => b.name.length));
+
+      const columnWidth = maxLength + 4;
+
+      console.log(chalk.white('BOARD NAME'.padEnd(columnWidth)) + chalk.blue('BOARD ID'));
+      for (const board of boards) {
+        console.log(chalk.white(board.name.padEnd(columnWidth)) + chalk.blue(board.id));
+      }
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -40,7 +49,7 @@ program
   .action(async () => {
     try {
       const member = await getMe();
-      console.log(member);
+      console.log(chalk.green('Logged in As:'), chalk.blue(`(${member.fullName})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -58,7 +67,22 @@ program
   .action(async (boardID: string) => {
     try {
       const list = await getList(boardID);
-      console.log(list);
+
+      const maxLength = Math.max(...list.map((l) => l.name.length));
+
+      const columnWidth = maxLength + 4;
+      console.log(
+        chalk.white('NAME'.padEnd(columnWidth)) +
+          chalk.blue('ID'.padEnd(columnWidth)) +
+          chalk.green('BOARD ID'.padEnd(columnWidth)),
+      );
+
+      for (const item of list) {
+        console.log(
+          chalk.white(item.name.padEnd(columnWidth)) +
+            chalk.blue(item.id.padEnd(columnWidth) + chalk.green(item.idBoard.padEnd(columnWidth))),
+        );
+      }
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -76,7 +100,27 @@ program
   .action(async (listID: string) => {
     try {
       const cards = await getCards(listID);
-      console.log(cards);
+
+      const maxLength = Math.max(...cards.map((c) => c.name.length));
+      const maxLenId = Math.max(...cards.map((c) => c.id.length));
+      const maxLenDue = Math.max(...cards.map((c) => c.due?.length ?? 0));
+
+      const nameWidth = maxLength + 4;
+      const idWidth = maxLenId + 4;
+      const dueWidth = maxLenDue + 4;
+
+      console.log(
+        chalk.white('NAME'.padEnd(nameWidth)) +
+          chalk.blue('ID'.padEnd(idWidth)) +
+          chalk.green('DUE DATE'.padEnd(dueWidth)),
+      );
+
+      for (const item of cards) {
+        console.log(
+          chalk.white(item.name.padEnd(nameWidth)) +
+            chalk.blue(item.id.padEnd(idWidth) + chalk.green((item.due ?? '-').padEnd(dueWidth))),
+        );
+      }
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -96,7 +140,7 @@ program
   .action(async (listID: string, cardName: string, description?: string) => {
     try {
       const card = await createCard(listID, cardName, description);
-      console.log(card);
+      console.log(chalk.green('Created card:'), card.name, chalk.blue(`(${card.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -115,7 +159,7 @@ program
   .action(async (cardId: string, targetListId: string) => {
     try {
       const card = await moveCard(cardId, targetListId);
-      console.log(card);
+      console.log(chalk.green('Moved card:'), card.name, chalk.blue(`(${card.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
@@ -133,7 +177,7 @@ program
   .action(async (cardId: string) => {
     try {
       const card = await archiveCard(cardId);
-      console.log(card);
+      console.log(chalk.green('Archived card:'), card.name, chalk.blue(`(${card.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
