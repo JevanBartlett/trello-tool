@@ -42,11 +42,13 @@ export async function createCard(
   listID: string,
   cardName: string,
   description?: string,
+  due?: string,
 ): Promise<TrelloCard> {
   const body = {
     name: cardName,
     idList: listID,
     desc: description,
+    due: due ? new Date(due).toISOString() : undefined,
   };
   const path = 'cards';
   const url = buildURL(path);
@@ -91,6 +93,26 @@ export async function archiveCard(cardId: string): Promise<TrelloCard> {
       Accept: 'application/json',
     },
   });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
+  }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
+}
+
+export async function setDue(cardId: string, dueDate: string): Promise<TrelloCard> {
+  const path = `cards/${cardId}`;
+  const date = new Date(dueDate);
+  const url = buildURL(path, { due: date.toISOString() });
+
+  const response: Response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
   if (!response.ok) {
     throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
   }

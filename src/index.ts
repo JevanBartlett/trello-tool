@@ -11,6 +11,7 @@ import {
   getList,
   getMe,
   moveCard,
+  setDue,
 } from './api/client.js';
 import { TrelloApiError } from './api/errors.js';
 
@@ -136,20 +137,28 @@ program
   .description('create a card. Requires: listID, name, optinally desc')
   .argument('<list-id>')
   .argument('<name>')
+  .option('--due <date>', 'Due date for the card')
   .argument('[description]')
-  .action(async (listID: string, cardName: string, description?: string) => {
-    try {
-      const card = await createCard(listID, cardName, description);
-      console.log(chalk.green('Created card:'), card.name, chalk.blue(`(${card.id})`));
-    } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
-      } else {
-        console.error('An unexpected error occurred');
+  .action(
+    async (
+      listID: string,
+      cardName: string,
+      description: string | undefined,
+      options: { due?: string },
+    ) => {
+      try {
+        const card = await createCard(listID, cardName, description, options.due);
+        console.log(chalk.green('Created card:'), card.name, chalk.blue(`(${card.id})`));
+      } catch (error) {
+        if (error instanceof TrelloApiError) {
+          console.error(`Error: ${error.message} (status ${error.statusCode})`);
+        } else {
+          console.error('An unexpected error occurred');
+        }
+        process.exit(1);
       }
-      process.exit(1);
-    }
-  });
+    },
+  );
 
 program
   .command('move-card')
@@ -178,6 +187,25 @@ program
     try {
       const card = await archiveCard(cardId);
       console.log(chalk.green('Archived card:'), card.name, chalk.blue(`(${card.id})`));
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('set-due')
+  .description('Set due date on a card. Requires: cardId, date')
+  .argument('<cardId>')
+  .argument('<dueDate>')
+  .action(async (cardId: string, dueDate: string) => {
+    try {
+      const card = await setDue(cardId, dueDate);
+      console.log(chalk.green('Set Due Date:'), card.name, chalk.blue(`(${card.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);
