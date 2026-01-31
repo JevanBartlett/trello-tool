@@ -121,6 +121,25 @@ export async function setDue(cardId: string, dueDate: string): Promise<TrelloCar
   return CardSchema.parse(result);
 }
 
+export async function clearDue(cardId: string): Promise<TrelloCard> {
+  const path = `cards/${cardId}`;
+  const url = buildURL(path, { due: 'null' });
+
+  const response: Response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
+  }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
+}
+
 export async function getBoards(): Promise<TrelloBoard[]> {
   const boards = await getData('members/me/boards');
   return z.array(BoardSchema).parse(boards);

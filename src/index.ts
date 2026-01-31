@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import 'dotenv/config';
 import {
   archiveCard,
+  clearDue,
   createCard,
   getBoards,
   getCards,
@@ -206,6 +207,24 @@ program
     try {
       const card = await setDue(cardId, dueDate);
       console.log(chalk.green('Set Due Date:'), card.name, chalk.blue(`(${card.id})`));
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('clear-due')
+  .description('Clear due date on a card. Requires: cardId')
+  .argument('<cardId>')
+  .action(async (cardId: string) => {
+    try {
+      const card = await clearDue(cardId);
+      console.log(chalk.green('Cleared Due Date:'), card.name, chalk.blue(`(${card.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);

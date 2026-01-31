@@ -9,6 +9,26 @@ Commit after each completed task
 When stuck for more than 30 minutes, ask for help
 Ugly working code beats beautiful imaginary code
 
+## Global Non-Negotiables (apply to all phases)
+
+### Security
+- Token files & configs stored under `~/.ctx/`
+- All secrets files: `chmod 600`
+- No tokens in logs. Ever.
+- Default mode for "agent writes" is **append-only** unless explicitly enabled.
+
+### Observability
+- Every tool invocation logged:
+  - timestamp, actor (cli/api/mcp), operation, target, success/failure, error msg
+- Structured error format everywhere:
+  - `{ success: false, code, message, hint, details? }`
+
+### Timezones
+- CLI inputs interpreted in **local timezone** by default.
+- Outbound requests use RFC3339 with explicit timezone offsets.
+
+---
+
 Phase 1: Consume the API
 Skills: HTTP requests, data parsing, authentication, CLI basics
 Week 1: First Contact
@@ -351,26 +371,6 @@ Done when: You've solved a real production issue
 
 **Working name:** `ctx`  
 > You're no longer building a Trello-only CLI. Namespace commands: `ctx trello …`, `ctx google …`, `ctx gmail …`, `ctx notes …`
-
----
-
-## Global Non-Negotiables (apply to all phases)
-
-### Security
-- Token files & configs stored under `~/.ctx/`
-- All secrets files: `chmod 600`
-- No tokens in logs. Ever.
-- Default mode for "agent writes" is **append-only** unless explicitly enabled.
-
-### Observability
-- Every tool invocation logged:
-  - timestamp, actor (cli/api/mcp), operation, target, success/failure, error msg
-- Structured error format everywhere:
-  - `{ success: false, code, message, hint, details? }`
-
-### Timezones
-- CLI inputs interpreted in **local timezone** by default.
-- Outbound requests use RFC3339 with explicit timezone offsets.
 
 ---
 
