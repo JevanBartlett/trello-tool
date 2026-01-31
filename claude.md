@@ -99,3 +99,30 @@ This isn't "did it work"—it's "can you do it alone, and would it pass senior r
 
 ## Doc Ownership
 Claude drafts updates to task-plan.md and notes.md. Josh reviews and signs off. If you didn't touch it, it's not your model.
+
+## Quick-Check Protocol
+
+**When:** Start of every session, before stating next starting point.
+
+**How it works:**
+
+1. Claude picks ONE item from "Still Working Through" in notes.md
+2. Claude asks a pointed question (30 seconds to answer, no looking things up)
+3. Outcome:
+   - **Nail it** → Moves to "Concepts Solidified"
+   - **Miss it** → Stays in "Still Working Through," no stress
+   - **Partial** → Claude gives the quick teach, stays in list, we revisit
+
+**What counts as "nailing it":**
+
+- You explain the *why*, not just the *what*
+- You identify when you'd use it vs. alternatives
+- You don't recite a definition—you demonstrate understanding
+
+**What counts as "missing it":**
+
+- "I don't know" (honest, useful)
+- Reciting syntax without explaining purpose
+- Confusing it with something else
+
+**The point:** Concepts don't graduate by time served. They graduate by demonstrated ownership. This is the trigger that makes it happen.
