@@ -6,19 +6,22 @@ import 'dotenv/config';
 import {
   archiveCard,
   clearDue,
+  createBoard,
   createCard,
+  createList,
   getBoards,
   getCards,
   getList,
   getMe,
   moveCard,
+  setDesc,
   setDue,
 } from './api/client.js';
 import { TrelloApiError } from './api/errors.js';
 
 const program = new Command();
 
-program.name('trello').description('CLI tool for interacting with Trello Api').version('0.1.0');
+program.name('trello').description('CLI tool for interacting with Trello API').version('0.1.0');
 
 program
   .command('get-boards')
@@ -47,7 +50,7 @@ program
 
 program
   .command('get-user')
-  .description('Get User Info')
+  .description('Display current user info')
   .action(async () => {
     try {
       const member = await getMe();
@@ -64,7 +67,7 @@ program
 
 program
   .command('get-list')
-  .description('Get a List from a board-requires board id')
+  .description('List all lists on a board')
   .argument('<board-id>')
   .action(async (boardID: string) => {
     try {
@@ -97,7 +100,7 @@ program
 
 program
   .command('get-cards')
-  .description('get all cards in a list')
+  .description('List all cards in a list')
   .argument('<list-id>')
   .action(async (listID: string) => {
     try {
@@ -135,7 +138,7 @@ program
 
 program
   .command('create-card')
-  .description('create a card. Requires: listID, name, optinally desc')
+  .description('Create a new card in a list')
   .argument('<list-id>')
   .argument('<name>')
   .option('--due <date>', 'Due date for the card')
@@ -163,7 +166,7 @@ program
 
 program
   .command('move-card')
-  .description('move card to a list.  Requires: cardId and target listId')
+  .description('Move a card to a different list')
   .argument('<cardId>')
   .argument('<targetListId>')
   .action(async (cardId: string, targetListId: string) => {
@@ -182,7 +185,7 @@ program
 
 program
   .command('archive-card')
-  .description('archive a card.  Requires: cardId')
+  .description('Archive a card')
   .argument('<cardId>')
   .action(async (cardId: string) => {
     try {
@@ -200,7 +203,7 @@ program
 
 program
   .command('set-due')
-  .description('Set due date on a card. Requires: cardId, date')
+  .description('Set due date on a card')
   .argument('<cardId>')
   .argument('<dueDate>')
   .action(async (cardId: string, dueDate: string) => {
@@ -219,12 +222,68 @@ program
 
 program
   .command('clear-due')
-  .description('Clear due date on a card. Requires: cardId')
+  .description('Clear due date from a card')
   .argument('<cardId>')
   .action(async (cardId: string) => {
     try {
       const card = await clearDue(cardId);
       console.log(chalk.green('Cleared Due Date:'), card.name, chalk.blue(`(${card.id})`));
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('set-desc')
+  .description('Update description on a card')
+  .argument('<cardId>')
+  .argument('<desc>')
+  .action(async (cardId: string, desc: string) => {
+    try {
+      const card = await setDesc(cardId, desc);
+      console.log(chalk.green('Updated Desc:'), card.name, chalk.blue(`(${card.id})`));
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('create-board')
+  .description('Create a new board')
+  .argument('<name>')
+  .action(async (name: string) => {
+    try {
+      const board = await createBoard(name);
+      console.log(chalk.green('Board Created:'), board.name, chalk.blue(`(${board.id})`));
+    } catch (error) {
+      if (error instanceof TrelloApiError) {
+        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      } else {
+        console.error('An unexpected error occurred');
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('create-list')
+  .description('Create a new list on a board')
+  .argument('<boardId>')
+  .argument('<name>')
+  .action(async (boardId: string, name: string) => {
+    try {
+      const list = await createList(boardId, name);
+      console.log(chalk.green('List Created:'), list.name, chalk.blue(`(${list.id})`));
     } catch (error) {
       if (error instanceof TrelloApiError) {
         console.error(`Error: ${error.message} (status ${error.statusCode})`);

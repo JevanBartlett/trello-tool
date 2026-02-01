@@ -140,6 +140,57 @@ export async function clearDue(cardId: string): Promise<TrelloCard> {
   return CardSchema.parse(result);
 }
 
+export async function setDesc(cardId: string, desc: string): Promise<TrelloCard> {
+  const path = `cards/${cardId}`;
+  const url = buildURL(path, { desc: desc });
+
+  const response: Response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
+  }
+
+  const result: unknown = await response.json();
+  return CardSchema.parse(result);
+}
+
+export async function createBoard(name: string): Promise<TrelloBoard> {
+  const path = buildURL('boards');
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
+  }
+
+  const result: unknown = await response.json();
+  return BoardSchema.parse(result);
+}
+
+export async function createList(boardId: string, name: string): Promise<TrelloList> {
+  const path = buildURL('lists');
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, idBoard: boardId }),
+  });
+  if (!response.ok) {
+    throw new TrelloApiError(`Request to ${path} failed`, response.status, path);
+  }
+  const result: unknown = await response.json();
+  return ListSchema.parse(result);
+}
+
 export async function getBoards(): Promise<TrelloBoard[]> {
   const boards = await getData('members/me/boards');
   return z.array(BoardSchema).parse(boards);

@@ -1,15 +1,34 @@
-Trello CLI Project — Task Plan
-Purpose
-This project exists to build fundamental software engineering skills through practical application. The goal is not the tool itself—it's the developer you become by building it.
-Ground Rules
+# ctx — Personal Automation System
 
-No planning beyond the current phase
-Each task should result in runnable code
-Commit after each completed task
-When stuck for more than 30 minutes, ask for help
-Ugly working code beats beautiful imaginary code
+## Purpose
 
-## Global Non-Negotiables (apply to all phases)
+This project exists to build fundamental software engineering skills through practical application, while solving a real problem: **capture thoughts in 5-second windows during back-to-back meetings and route them to the right system without thinking about formatting.**
+
+**The constraint:** You're in 6 hours of 30-minute calls daily. You have an iPad on cellular (grey zone, but it's how you survive). You need to thumb-mash a thought and move on.
+
+**The solution:** Text anything to a Telegram bot. LLM parses intent. Services execute.
+
+```
+You (2:47pm): "nancy thursday uat"
+Bot (2:47pm): ✓ task: follow up with Nancy about UAT — due Thursday
+
+You (3:12pm): "routing broken again check with dev"  
+Bot (3:12pm): ✓ note added to daily
+```
+
+---
+
+## Ground Rules
+
+- No planning beyond the current phase
+- Each task should result in runnable code
+- Commit after each completed task
+- When stuck for more than 30 minutes, ask for help
+- Ugly working code beats beautiful imaginary code
+
+---
+
+## Global Non-Negotiables
 
 ### Security
 - Token files & configs stored under `~/.ctx/`
@@ -27,905 +46,1170 @@ Ugly working code beats beautiful imaginary code
 - CLI inputs interpreted in **local timezone** by default.
 - Outbound requests use RFC3339 with explicit timezone offsets.
 
+### Cost Awareness
+- Claude API calls are cheap but not free
+- Log token usage so you can monitor spend
+- Target: < $5/month at normal usage
+
 ---
 
-Phase 1: Consume the API
-Skills: HTTP requests, data parsing, authentication, CLI basics
-Week 1: First Contact
+# Phase 1: Trello Foundation
 
-✅ Task 1.1: Set up project
+**Skills:** HTTP requests, data parsing, authentication, CLI basics, service extraction
 
-Create directory, npm init, install TypeScript
-Create tsconfig.json
-Create src/index.ts that logs "Hello Trello"
-Run it with npx ts-node src/index.ts
-Done when: You see "Hello Trello" in terminal
+## Week 1: First Contact
+
+### ✅ Task 1.1: Set up project
+
+- Create directory, npm init, install TypeScript
+- Create tsconfig.json
+- Create src/index.ts that logs "Hello Trello"
+- Run it with npx ts-node src/index.ts
+
+**Done when:** You see "Hello Trello" in terminal
+
 **Completed:** Project scaffolded with TypeScript, ESLint, Prettier, Husky pre-commit hooks
 
-✅ Task 1.2: Get Trello credentials
+---
 
-Go to https://trello.com/power-ups/admin
-Create a new Power-Up (just to get API key)
-Generate API key and token
-Store in .env file (add .env to .gitignore)
-Done when: You have TRELLO_API_KEY and TRELLO_TOKEN in .env
+### ✅ Task 1.2: Get Trello credentials
+
+- Go to https://trello.com/power-ups/admin
+- Create a new Power-Up (just to get API key)
+- Generate API key and token
+- Store in .env file (add .env to .gitignore)
+
+**Done when:** You have TRELLO_API_KEY and TRELLO_TOKEN in .env
+
 **Completed:** Credentials stored in .env, .gitignore already configured
 
-✅ Task 1.3: First API call
+---
 
-Install dotenv and a fetch library (or use native fetch)
-Make GET request to https://api.trello.com/1/members/me
-Log the response
-Done when: You see your Trello username printed
+### ✅ Task 1.3: First API call
+
+- Install dotenv and a fetch library (or use native fetch)
+- Make GET request to https://api.trello.com/1/members/me
+- Log the response
+
+**Done when:** You see your Trello username printed
+
 **Completed:** Using native fetch, dotenv installed, username 'joshbartlett16' returned
 
-✅ Task 1.4: Fetch your boards
+---
 
-GET https://api.trello.com/1/members/me/boards
-Parse response JSON
-Print board names to console
-Done when: Your board names appear in terminal
+### ✅ Task 1.4: Fetch your boards
+
+- GET https://api.trello.com/1/members/me/boards
+- Parse response JSON
+- Print board names to console
+
+**Done when:** Your board names appear in terminal
+
 **Completed:** 10 boards returned including FCO UAT Task, Mom's Project, Shopping Lists
 
-Week 2: Structure and CLI
+---
 
-✅ Task 1.5: Create a Trello API module
+## Week 2: Structure and CLI
 
-Move API logic to src/api/client.ts
-Export functions: getMe(), getBoards()
-Import and use from index.ts
-Done when: Same output, cleaner code
+### ✅ Task 1.5: Create a Trello API module
+
+- Move API logic to src/api/client.ts
+- Export functions: getMe(), getBoards()
+- Import and use from index.ts
+
+**Done when:** Same output, cleaner code
+
 **Completed:** buildURL() helper for auth, getData() for fetching, getBoards() and getMe() exported. Learned URL constructor trailing slash behavior.
 
-✅ Task 1.6: Add Zod schema validation
+---
 
-Install zod
-Convert interfaces in src/types/trello.ts to Zod schemas
-Infer TypeScript types from schemas using z.infer
-Validate API responses with .parse() instead of casting
-Done when: API responses are validated at runtime, no more `as` casts
+### ✅ Task 1.6: Add Zod schema validation
+
+- Install zod
+- Convert interfaces in src/types/trello.ts to Zod schemas
+- Infer TypeScript types from schemas using z.infer
+- Validate API responses with .parse() instead of casting
+
+**Done when:** API responses are validated at runtime, no more `as` casts
+
 **Completed:** Zod schemas created for Board, Member, Label, List, Card. Types inferred with z.infer. API functions use .parse() for runtime validation.
 
-✅ Task 1.7: Add basic CLI structure
+---
 
-Install commander
-Create command: trello boards
-Wire it to your getBoards() function
-Done when: npx ts-node src/index.ts boards lists your boards
+### ✅ Task 1.7: Add basic CLI structure
+
+- Install commander
+- Create command: trello boards
+- Wire it to your getBoards() function
+
+**Done when:** npx ts-node src/index.ts boards lists your boards
+
 **Completed:** Commander installed, `boards` and `get-user` commands working. Fixed ESLint config for type-checked rules. Learned about tsx vs tsc build workflow.
 
-✅ Task 1.8: Fetch lists for a board
+---
 
-Add getLists(boardId) function
-Create command: trello lists <board-id>
-Done when: You can see lists for any board
+### ✅ Task 1.8: Fetch lists for a board
+
+- Add getLists(boardId) function
+- Create command: trello lists <board-id>
+
+**Done when:** You can see lists for any board
+
 **Completed:** Added getList(boardID) function with parameterized endpoint. Created `get-list <board-id>` command using Commander's .argument() for positional args.
 
-✅ Task 1.9: Fetch cards for a list
+---
 
-Add getCards(listId) function
-Create command: trello cards <list-id>
-Done when: You can see cards in any list
+### ✅ Task 1.9: Fetch cards for a list
+
+- Add getCards(listId) function
+- Create command: trello cards <list-id>
+
+**Done when:** You can see cards in any list
+
 **Completed:** Added getCards(listID) function with parameterized endpoint. Created `get-cards <list-id>` command. Tested successfully with FCO UAT board.
 
-Week 3: Write Operations
+---
 
-✅ Task 1.10: Create a card
+## Week 3: Write Operations
 
-Add createCard(listId, name, description?) function
-Create command: trello add-card <list-id> "Card name"
-Done when: Card appears in Trello UI
+### ✅ Task 1.10: Create a card
+
+- Add createCard(listId, name, description?) function
+- Create command: trello add-card <list-id> "Card name"
+
+**Done when:** Card appears in Trello UI
+
 **Completed:** Added createCard() with POST request, JSON body, and Content-Type header. Created `create-card` command with three arguments (two required, one optional). Card successfully created in Trello.
 
-✅ Task 1.11: Move a card
+---
 
-Add moveCard(cardId, targetListId) function
-Create command: trello move-card <card-id> <list-id>
-Done when: Card moves between lists
+### ✅ Task 1.11: Move a card
+
+- Add moveCard(cardId, targetListId) function
+- Create command: trello move-card <card-id> <list-id>
+
+**Done when:** Card moves between lists
+
 **Completed:** Added moveCard() with PUT request using URL.searchParams.set() to build query parameters. Created `move-card` command with two required arguments. Successfully tested moving cards between lists on FCO UAT board. Learned: PUT for updates vs POST for creates, searchParams.set() for building query strings safely.
 
-✅ Task 1.12: Archive a card
+---
 
-Add archiveCard(cardId) function
-Create command: trello archive-card <card-id>
-Done when: Card is archived
+### ✅ Task 1.12: Archive a card
+
+- Add archiveCard(cardId) function
+- Create command: trello archive-card <card-id>
+
+**Done when:** Card is archived
+
 **Completed:** Added archiveCard() with PUT request and {closed: 'true'} parameter. Created archive-card CLI command with one required argument. Successfully tested - archived card removed from active list view. Learned: Chose focused function (archiveCard) over generic updateCard for better interface clarity (deep modules principle).
 
-Week 4: Polish
+---
 
-✅ Task 1.13: Error handling
+## Week 4: Polish
 
-Wrap API calls in try/catch
-Display meaningful error messages
-Handle network failures gracefully
-Done when: Bad inputs show helpful errors, not stack traces
+### ✅ Task 1.13: Error handling
+
+- Wrap API calls in try/catch
+- Display meaningful error messages
+- Handle network failures gracefully
+
+**Done when:** Bad inputs show helpful errors, not stack traces
+
 **Completed:** Created TrelloApiError custom class with statusCode and endpoint properties. API client throws structured errors. CLI catches errors and shows clean messages (no stack traces). Learned: custom error classes (extends Error, public constructor params), instanceof for type checking, process.exit(1) for signaling failure, console.error for stderr.
 
-✅ Task 1.14: Better output formatting
+---
 
-Format boards/lists/cards in readable columns
-Add colors with chalk (optional)
-Show IDs in a way that's easy to copy
-Done when: Output is pleasant to read
+### ✅ Task 1.14: Better output formatting
+
+- Format boards/lists/cards in readable columns
+- Add colors with chalk (optional)
+- Show IDs in a way that's easy to copy
+
+**Done when:** Output is pleasant to read
+
 **Completed:** Added chalk for colors. Read commands display formatted columns with headers. Write commands show clean success messages with card name and ID. Learned: `padEnd()` for column alignment, `?.` optional chaining, `??` nullish coalescing, operator precedence with `??`.
 
-Task 1.15: Add help text
+---
 
-Add descriptions to all commands
-trello --help shows useful info
-Done when: A stranger could figure out how to use it
+### ✅ Task 1.15: Due date manipulation
 
-Task 1.16: Due date manipulation
+- Add `--due` option to create-card command
+- Add `set-due` command to update due date on existing card
+- Add `clear-due` command to remove due date
 
-Add `--due` option to create-card command
-Add `set-due` command to update due date on existing card
-Add `clear-due` command to remove due date
-Done when: Can create cards with due dates and modify due dates on existing cards
+**Done when:** Can create cards with due dates and modify due dates on existing cards
 
-Phase 1 Complete Checkpoint: You have a working CLI that can read and write to Trello.
-
-Phase 2: Persist Data
-Skills: Local storage, caching, configuration management
-Week 5: Local Storage
-
-Task 2.1: Store config in a file
-
-Create ~/.trello-cli/config.json
-Store default board ID
-Command: trello config set-default-board <board-id>
-Done when: Default persists across sessions
-
-Task 2.2: Cache boards and lists
-
-Save boards/lists to ~/.trello-cli/cache.json
-Add timestamps to cached data
-Done when: Second trello boards is instant
-
-Task 2.3: Cache invalidation
-
-Add --refresh flag to bypass cache
-Auto-expire cache after 5 minutes
-Done when: trello boards --refresh fetches fresh data
-
-Task 2.4: Use default board
-
-trello lists (no arg) uses default board
-trello add-card "Name" uses default board's first list
-Done when: Common operations require fewer arguments
-
-Week 6: SQLite (Optional but Recommended)
-
-Task 2.5: Set up SQLite
-
-Install better-sqlite3
-Create database at ~/.trello-cli/data.db
-Create tables: boards, lists, cards
-Done when: Database file exists with tables
-
-Task 2.6: Migrate caching to SQLite
-
-Replace JSON cache with database queries
-Insert/update on fetch
-Query from database for display
-Done when: Same behavior, database backend
-
-Task 2.7: Add local search
-
-Command: trello search "keyword"
-Search card names and descriptions locally
-Done when: Search returns matching cards instantly
-
-Phase 2 Complete Checkpoint: Your CLI is faster and remembers preferences.
-
-Phase 3: Expose Your Own API
-Skills: HTTP server, routing, request/response handling, API design
-Week 7: Basic Server
-
-Task 3.1: Hello World server
-
-Install express and @types/express
-Create src/server.ts
-GET / returns { status: "ok" }
-Done when: curl http://localhost:3000 returns JSON
-
-Task 3.2: Boards endpoint
-
-GET /boards returns your boards
-Reuse your existing getBoards() function
-Done when: Browser shows your boards as JSON
-
-Task 3.3: Lists endpoint
-
-GET /boards/:boardId/lists returns lists
-Handle invalid board ID with 404
-Done when: Endpoint works, errors are handled
-
-Task 3.4: Cards endpoints
-
-GET /lists/:listId/cards
-POST /lists/:listId/cards (body: { name, description })
-Done when: Can read and create cards via HTTP
-
-Week 8: API Completeness
-
-Task 3.5: Card operations
-
-PUT /cards/:cardId/move (body: { listId })
-DELETE /cards/:cardId
-Done when: Full CRUD for cards via API
-
-Task 3.6: Input validation
-
-Validate request bodies
-Return 400 with helpful messages for bad input
-Done when: POST /cards with no name returns clear error
-
-Task 3.7: Consistent error responses
-
-All errors return { error: string, code: number }
-Log errors server-side
-Done when: Errors are predictable and logged
-
-Task 3.8: Add authentication
-
-Require Authorization: Bearer <token> header
-Generate a personal token, store in config
-Reject unauthorized requests with 401
-Done when: API is protected
-
-Week 9: Documentation and Testing
-
-Task 3.9: Document your API
-
-Create API.md with all endpoints
-Include example requests/responses
-Done when: Someone else could use your API from docs alone
-
-Task 3.10: Add basic tests
-
-Install testing framework (vitest or jest)
-Test at least 3 endpoints
-Done when: npm test passes
-
-Phase 3 Complete Checkpoint: You have an API that any client (including an LLM) can call.
-
-Phase 4: Deploy It
-Skills: Deployment, environment management, production concerns
-Week 10: Prepare for Production
-
-Task 4.1: Environment configuration
-
-Use environment variables for all secrets
-Create .env.example documenting required vars
-Done when: App runs with only env vars, no hardcoded secrets
-
-Task 4.2: Add health check
-
-GET /health returns { status: "healthy", timestamp }
-Done when: Monitoring can ping your app
-
-Task 4.3: Add request logging
-
-Log each request: method, path, status, duration
-Done when: You can see traffic in logs
-
-Task 4.4: Dockerfile
-
-Create Dockerfile for your app
-Build and run locally with Docker
-Done when: docker run starts your server
-
-Week 11: Deploy
-
-Task 4.5: Choose and set up platform
-
-Fly.io recommended (free tier, simple)
-Install CLI, authenticate
-Done when: fly auth whoami shows your account
-
-Task 4.6: First deploy
-
-fly launch to configure
-Set secrets with fly secrets set
-Deploy
-Done when: Your API is live on the internet
-
-Task 4.7: Verify production
-
-Hit your live /health endpoint
-Create a card via live API
-Verify it appears in Trello
-Done when: Full round trip works in production
-
-Task 4.8: Set up basic monitoring
-
-Check Fly.io dashboard for logs
-Understand where to look when things break
-Done when: You can find logs and metrics
-
-Phase 4 Complete Checkpoint: Your API is live and reachable from anywhere.
-
-Phase 5: Integration
-Skills: System integration, debugging distributed systems
-Week 12: LLM Integration
-
-Task 5.1: Define tool schema
-
-Write JSON schema for your API (for LLM function calling)
-Document what each tool does
-Done when: Schema matches your endpoints
-
-Task 5.2: Test with Claude
-
-Use your deployed API as a tool
-Ask Claude to list your boards, create a card
-Done when: Claude successfully uses your API
-
-Task 5.3: Debug a real issue
-
-Something will break. Find it. Fix it.
-Document what went wrong and how you found it
-Done when: You've solved a real production issue
-
-# Task Plan — Personal Automation CLI + MCP Server
-
-**Working name:** `ctx`  
-> You're no longer building a Trello-only CLI. Namespace commands: `ctx trello …`, `ctx google …`, `ctx gmail …`, `ctx notes …`
+**Completed:** Added --due option to create-card using Commander .option(). Created setDue() and clearDue() API functions with PUT requests. Added set-due and clear-due CLI commands. Learned: Commander .option() vs .argument(), options object as last callback parameter, `param: string | undefined` vs `param?: string` for function signatures.
 
 ---
 
-# Phase 6: Google Calendar Integration
-**Skills:** OAuth2 (Installed App), token refresh, timezone policy, Google APIs
+### Task 1.16: Update card description
 
-## Week 13: OAuth2 Foundation
+- Add `set-desc` command to update description on existing card
+- `ctx trello set-desc <card-id> "new description"`
 
-### Task 6.1 — Google Cloud Setup (Installed App)
+**Done when:** Can update card descriptions from CLI
+
+**Time estimate:** 30 minutes
+
+---
+
+### Task 1.17: Add help text
+
+- Add descriptions to all commands
+- `trello --help` shows useful info
+
+**Done when:** A stranger could figure out how to use it
+
+**Time estimate:** 30 minutes
+
+---
+
+### Task 1.18: Extract TrelloService
+
+**This is the critical refactor.** Create the service layer that both CLI and future bot will use.
+
+**Create `src/services/trello-service.ts`:**
+```typescript
+export class TrelloService {
+  constructor(private apiKey: string, private token: string) {}
+  
+  async getBoards(): Promise<Board[]>
+  async getLists(boardId: string): Promise<List[]>
+  async getCards(listId: string): Promise<Card[]>
+  async createCard(params: CreateCardParams): Promise<Card>
+  async updateCard(id: string, params: UpdateCardParams): Promise<Card>
+  async moveCard(id: string, targetListId: string): Promise<Card>
+  async archiveCard(id: string): Promise<void>
+}
+```
+
+**Refactor all CLI commands to use the service:**
+- Commands become thin wrappers
+- All Trello API logic lives in one place
+
+**Done when:**
+- All existing CLI commands work identically
+- No fetch calls remain in command files
+- Service is importable by other modules
+
+**Time estimate:** 2-3 hours
+
+---
+
+### Task 1.19: Configuration file
+
+- Create `~/.ctx/config.json`
+- Store default board ID and inbox list ID
+- `ctx trello config set-board <board-id>`
+- `ctx trello config set-inbox <list-id>`
+
+**Done when:**
+- `trelloService.createCard({ name: "test" })` uses default inbox list
+- Config persists across sessions
+
+**Time estimate:** 1 hour
+
+---
+
+**Phase 1 Complete Checkpoint:** You have a working CLI with a clean service layer that can be consumed by both humans and bots.
+
+---
+
+# Phase 2: Obsidian Foundation
+
+**Goal:** Write to your Obsidian vault programmatically.
+
+### Task 2.1: ObsidianService scaffold
+
+**Create `src/services/obsidian-service.ts`:**
+```typescript
+export class ObsidianService {
+  constructor(private vaultPath: string) {}
+  
+  async getDailyNotePath(): Promise<string>  // e.g., Daily/2025-01-31.md
+  async appendToDaily(content: string): Promise<void>
+  async createNote(path: string, content: string): Promise<void>
+  async readNote(path: string): Promise<string>
+  async searchNotes(query: string): Promise<SearchResult[]>
+}
+```
+
+**Done when:**
+- Can append a line to today's daily note
+- Creates the daily note if it doesn't exist
+
+**Time estimate:** 2 hours
+
+---
+
+### Task 2.2: Daily note conventions
+
+Establish the format your daily notes will use:
+
+```markdown
+# 2025-01-31
+
+## Captured
+- 2:47pm — nancy thursday uat
+- 3:12pm — routing broken again check with dev
+
+## Tasks Created
+- [ ] follow up with Nancy about UAT — due Thursday
+
+## Notes
+- routing issue resurfaced, check with dev team
+```
+
+**Done when:**
+- `appendToDaily()` adds timestamped entry to Captured section
+- Template creates proper structure for new daily notes
+
+**Time estimate:** 1 hour
+
+---
+
+### Task 2.3: Obsidian CLI commands
+
+- `ctx notes daily` — show today's daily note
+- `ctx notes append "some text"` — append to daily
+- `ctx notes create <path> "content"` — create note
+- `ctx notes search "query"` — search vault
+
+**Done when:** Can manage notes from command line
+
+**Time estimate:** 1.5 hours
+
+---
+
+### Task 2.4: Search implementation
+
+- Use `grep` or `ripgrep` for fast search
+- Return file path + matching line + context
+
+**Done when:** `ctx notes search "nancy"` finds all mentions quickly
+
+**Time estimate:** 1 hour
+
+---
+
+# Phase 3: Google Calendar Foundation
+
+**Goal:** Programmatic access to a calendar you control, syncable to Apple Calendar.
+
+### Task 3.1: Google Cloud setup
+
 - Create project in Google Cloud Console
-- Enable **Google Calendar API**
-- Configure consent screen
-- Create OAuth2 credentials as **Desktop / Installed App**
-- Done when:
-  - You have credentials downloaded as JSON
-  - You've configured redirect support for loopback localhost flow
+- Enable Google Calendar API
+- Configure OAuth consent screen
+- Create OAuth credentials (Desktop/Installed App)
 
-### Task 6.2 — Implement OAuth2 loopback flow
-- Install `googleapis`
-- Create `src/auth/google.ts`
-- Implement:
-  - Authorization URL generation with:
-    - `access_type=offline`
-    - `prompt=consent` (first-time auth to ensure refresh token)
-  - Local callback server (loopback redirect)
-  - Exchange code -> tokens
-- Done when:
-  - You can get an access token via browser flow
-  - You have a refresh token (first-time flow)
+**Done when:** You have credentials JSON downloaded
 
-### Task 6.3 — Token persistence + refresh
-- Save tokens to `~/.ctx/google-tokens.json`
-- Enforce `chmod 600`
-- Implement automatic refresh on expiry
-- Done when:
-  - Tokens persist across sessions
-  - Refresh happens without user intervention
+**Time estimate:** 30 minutes
 
-### Task 6.4 — CLI auth command
-- `ctx google login`
-- Opens browser, handles callback via local server
-- Done when:
-  - User can authenticate with one command end-to-end
+---
 
-## Week 14: Calendar Read Operations
+### Task 3.2: OAuth flow implementation
 
-### Task 6.5 — List calendars
-- Add `getCalendars()` in `src/api/google-calendar.ts`
-- CLI: `ctx google calendars`
-- Done when:
-  - Calendars appear with `id`, `summary`, `primary?`
+**Create `src/auth/google.ts`:**
+- Authorization URL generation with `access_type=offline`
+- Local callback server (loopback redirect)
+- Exchange code → tokens
+- Save tokens to `~/.ctx/google-tokens.json` with `chmod 600`
+- Auto-refresh on expiry
 
-### Task 6.6 — Get events (with timezone policy)
-- Add `getEvents(calendarId, timeMin, timeMax)`
-- CLI: `ctx google events [calendar-id] --from <date> --to <date>`
-- Print local times by default
-- Done when:
-  - Events display with correct local times vs Calendar UI
+**Done when:** `ctx google login` completes OAuth flow end-to-end
 
-### Task 6.7 — Search events
-- Add `searchEvents(query, timeMin?, timeMax?)`
-- CLI: `ctx google events-search "keyword" [--from] [--to]`
-- Done when:
-  - Can find events by text search reliably
+**Time estimate:** 2 hours
 
-## Week 15: Calendar Write Operations
+---
 
-### Task 6.8 — Create event
-- Add `createEvent(calendarId, event)`
-- CLI: `ctx google add-event "Title" --date <date> --time <time> --duration <minutes> [--location] [--notes]`
-- Done when:
-  - Event appears in Google Calendar and can be fetched by your CLI
+### Task 3.3: GoogleCalendarService scaffold
 
-### Task 6.9 — Update event
-- Add `updateEvent(calendarId, eventId, updates)`
-- CLI: `ctx google update-event <event-id> [--title] [--date] [--time] [--duration]`
-- Done when:
-  - Can modify existing events without clobbering other fields
+**Create `src/services/google-calendar-service.ts`:**
+```typescript
+export class GoogleCalendarService {
+  async getCalendars(): Promise<Calendar[]>
+  async getEvents(calendarId: string, timeMin: Date, timeMax: Date): Promise<Event[]>
+  async createEvent(calendarId: string, event: CreateEventParams): Promise<Event>
+  async deleteEvent(calendarId: string, eventId: string): Promise<void>
+}
+```
 
-### Task 6.10 — Delete event
-- Add `deleteEvent(calendarId, eventId)`
-- CLI: `ctx google delete-event <event-id>`
-- Done when:
-  - Events can be removed and disappear from subsequent fetches
+**Done when:** Can create an event that appears in Google Calendar
 
-## Week 16: Calendar Polish
+**Time estimate:** 2 hours
 
-### Task 6.11 — Default calendar config
-- Add default calendar to config file
+---
+
+### Task 3.4: Calendar CLI commands
+
+- `ctx calendar list` — show calendars
+- `ctx calendar events --from <date> --to <date>` — show events
+- `ctx calendar add "Title" --date <date> --time <time> --duration <minutes>`
+- `ctx calendar delete <event-id>`
+
+**Done when:** Can manage calendar from command line
+
+**Time estimate:** 1.5 hours
+
+---
+
+### Task 3.5: Default calendar config
+
+- Store default calendar ID in `~/.ctx/config.json`
 - Commands work without specifying calendar ID
-- Done when:
-  - `ctx google events --from --to` uses default calendar
 
-### Task 6.12 — Recurring events
-- Step 1: Display RRULE and recurrence info
-- Step 2: Create "simple weekly" recurrence
-- Done when:
-  - You can create weekly/monthly recurring events and display recurrence info
+**Done when:** `ctx calendar add "Meeting" --date tomorrow --time 2pm` uses default calendar
 
-### Task 6.13 — Add calendar endpoints to REST API
-- GET `/calendars`
-- GET `/calendars/:id/events`
-- POST `/calendars/:id/events`
-- PUT `/events/:id`
-- DELETE `/events/:id`
-- Done when:
-  - Full calendar CRUD via HTTP with consistent errors/logging
-
-**Phase 6 Complete Checkpoint:** You can manage Google Calendar from CLI and API.
+**Time estimate:** 30 minutes
 
 ---
 
-# Phase 7: Gmail Integration
-**Skills:** Gmail API, MIME/RFC 2822, threading headers, search operators
+### Task 3.6: Sync with Apple Calendar
 
-## Week 17: Gmail Auth & Reading
+- Add Google account to Apple Calendar (manual, one-time)
+- Verify events created via CLI appear on iPhone/iPad
 
-### Task 7.1 — Enable Gmail API + incremental scopes
-- Enable Gmail API in Google Cloud
-- Add Gmail scope(s) to OAuth flow
-- Force re-auth to grant Gmail permissions
-- Done when:
-  - Token has Gmail access (verified by calling an endpoint)
+**Done when:** Events sync to your Apple devices
 
-### Task 7.2 — List messages
-- Add `getMessages(query, maxResults, pageToken?)` in `src/api/gmail.ts`
-- CLI: `ctx gmail emails [--from] [--subject] [--unread] [--max N]`
-- Done when:
-  - Can list recent emails with filters + pagination
-
-### Task 7.3 — Read message (MIME parsing)
-- Add `getMessage(messageId)`
-- Parse plain text + HTML parts
-- CLI: `ctx gmail email <message-id>`
-- Done when:
-  - Can read full email content reliably
-
-### Task 7.4 — Search emails (Gmail operators)
-- Implement raw Gmail search operators
-- CLI: `ctx gmail search "from:boss subject:(uat) newer_than:7d"`
-- Done when:
-  - Can use Gmail-style search from CLI
-
-## Week 18: Gmail Write Ops
-
-### Task 7.5 — Send email (RFC 2822 raw)
-- Add `sendEmail(to, subject, body)`
-- Build RFC 2822 message, base64url encode, send via Gmail
-- CLI: `ctx gmail send <to> --subject "Subject" --body "Body"`
-- Done when:
-  - Can send plain text emails that arrive correctly
-
-### Task 7.6 — Reply to email (thread correctly)
-- Add `replyToEmail(messageId, body)`
-- MUST set:
-  - `threadId`
-  - RFC 2822 headers: `In-Reply-To`, `References`
-- CLI: `ctx gmail reply <message-id> --body "Reply"`
-- Done when:
-  - Replies thread correctly in Gmail
-
-### Task 7.7 — Drafts
-- Add `createDraft()`, `getDrafts()`, `sendDraft()`
-- CLI: `ctx gmail drafts`, `ctx gmail create-draft`, `ctx gmail send-draft <draft-id>`
-- Done when:
-  - Can manage drafts from CLI
-
-## Week 19: Gmail Polish
-
-### Task 7.8 — Labels
-- Add `getLabels()`, `addLabel()`, `removeLabel()`
-- CLI: `ctx gmail label <message-id> <label>`
-- Done when:
-  - Can organize emails with labels
-
-### Task 7.9 — Attachments
-- Handle attachment downloads in `getMessage()`
-- Save to local directory
-- CLI: `ctx gmail email <message-id> --save-attachments [--out ./attachments]`
-- Done when:
-  - Can download email attachments reliably
-
-### Task 7.10 — Gmail REST endpoints
-- GET `/emails`
-- GET `/emails/:id`
-- POST `/emails/send`
-- POST `/emails/:id/reply`
-- Done when:
-  - Email operations available via HTTP
-
-**Phase 7 Complete Checkpoint:** You can read and send email from CLI and API.
+**Time estimate:** 15 minutes (just verification)
 
 ---
 
-# Phase 8: Notes Gateway (File-First Vault + Always-On Agent Access)
-**Skills:** File IO, indexing/search, append-only writing, conflict handling, auth, audit logs
+# Phase 4: The Bot (This Is The Product)
 
-## Hosting Decision (Choose Before Starting)
+**Goal:** Text anything, get it routed correctly.
 
-The Notes Gateway runs 24/7. You have two options:
+### Task 4.1: Telegram bot setup
 
-### Option A: Cloud Container (Recommended for you)
-- Deploy to Fly.io, Railway, or Render (free/cheap tiers available)
-- Same Docker skills from Phase 4
-- Requires solving vault sync (see Task 8.1)
+- Message @BotFather on Telegram
+- Create new bot, get token
+- Store token in `~/.ctx/config.json`
+- Test: send message, see it in bot API
 
-### Option B: Home Server
-- Mac mini / Linux mini PC / NAS
-- No sync needed—vault is local
-- Requires hardware, networking, maintenance
+**Done when:** You can send a message to your bot and retrieve it via API
 
-**Recommendation:** Start with Option A. You're already learning Docker. Add home server later if cloud limits frustrate you.
+**Time estimate:** 30 minutes
 
 ---
 
-## Week 20: Vault + Gateway Foundations
+### Task 4.2: Gateway scaffold
 
-### Task 8.1 — Vault location + sync strategy
-Choose one:
+**Create `src/gateway/server.ts`:**
+```typescript
+// Express server that:
+// - Receives Telegram webhook POST
+// - Extracts message text
+// - Returns 200 OK immediately (Telegram requires fast response)
+// - Processes message async
+```
 
-**Option 1: Git-based sync (recommended)**
-- Vault is a Git repo
-- Container clones repo, pulls before reads, commits+pushes after writes
-- You get version history for free
-- Edit locally, push; container pulls latest
+**Done when:**
+- Server runs locally
+- Telegram webhook hits it (use ngrok for testing)
+- Messages logged to console
 
-**Option 2: Cloud storage mount**
-- Vault in Dropbox/Google Drive
-- Container mounts via rclone or similar
-- More fragile, sync conflicts possible
-
-**Option 3: Vault lives in container only**
-- No local Obsidian editing
-- All edits via API or web UI
-- Simplest architecture, worst UX
-
-Done when:
-- You've chosen an approach and documented it
-- Vault folder exists with structure: `Daily/`, `Projects/`, `People/`, `Inbox/`
-- README in vault root explains conventions
-
-### Task 8.2 — Notes Gateway service scaffold
-- Create `src/notes-gateway/server.ts`
-- Add REST auth (API key header)
-- Add audit log file: `~/.ctx/audit.log` (or container-appropriate path)
-- Done when:
-  - Server runs and requires API key
-  - Requests log to audit file
-
-### Task 8.3 — Core note operations (append-first)
-Implement:
-- `createNote(path, title?, content?)`
-- `getNote(path)`
-- `appendToNote(path, content, heading?)`
-- `listNotes(prefixPath?)`
-
-Done when:
-- You can create/read/append/list without data loss
-- Append does NOT rewrite existing content
-
-## Week 21: Search + Safety
-
-### Task 8.4 — Fast search
-- Implement search via `ripgrep` (shell) or Node equivalent
-- Endpoint: `GET /notes/search?q=...`
-- Done when:
-  - Search returns results with file + line snippets quickly
-
-### Task 8.5 — Safety guardrails
-- Allowlist vault root (no path traversal)
-- Hard limit note size and append size
-- Optional denylist patterns (e.g., never expose `Banking/`, `Medical/`)
-- Done when:
-  - Attempts to access outside vault fail safely
-  - Sensitive folders are protected
-
-### Task 8.6 — Conflict strategy (if using sync)
-- If vault is synced (Git/cloud), define behavior:
-  - Git: pull before read, commit+push after write
-  - If conflict detected -> write to `Conflicts/` + log
-- Done when:
-  - Conflicts don't silently destroy content
-
-## Week 22: Agent-Friendly Features
-
-### Task 8.7 — Templates for agent output
-- Standard sections:
-  - `## Agent Findings`
-  - `## Decisions`
-  - `## Next Actions`
-- Endpoint supports `heading="Agent Findings"` for targeted append
-- Done when:
-  - Agents always append into predictable sections
-
-### Task 8.8 — Optional: embeddings index
-- Create local vector index (lightweight, e.g., using sqlite-vss)
-- Endpoint: `GET /notes/semantic?q=...`
-- Skip if not needed—ripgrep may be enough
-- Done when:
-  - Semantic search works without shipping data to external services
-
-### Task 8.9 — Notes REST API completeness
-- GET `/notes` — list notes
-- GET `/notes/:path` — read note
-- POST `/notes` — create note
-- PATCH `/notes/:path/append` — append to note
-- GET `/notes/search` — text search
-- Done when:
-  - Notes fully manageable via HTTP with safe defaults
-
-### Task 8.10 — Obsidian integration (optional)
-- Use Obsidian as UI on top of vault folder (if using Git sync)
-- Gateway and Obsidian both read/write same Markdown files
-- Done when:
-  - You can edit notes in Obsidian while agents use the gateway
-
-**Phase 8 Complete Checkpoint:** You have an always-on service that safely exposes your Markdown vault to agents.
+**Time estimate:** 2 hours
 
 ---
 
-# Phase 9: Playwright Action Primitives
-**Skills:** Browser automation, selector strategies, error recovery, action abstraction
+### Task 4.3: Claude integration for parsing
 
-## Week 23: Playwright Foundation
+**Create `src/gateway/parser.ts`:**
+```typescript
+interface ParsedMessage {
+  type: 'task' | 'note' | 'event' | 'unknown';
+  content: string;
+  dueDate?: string;  // extracted if present
+  project?: string;  // extracted if present
+  eventTime?: string; // for calendar events
+  eventDuration?: number; // minutes
+}
 
-### Task 9.1 — Set up Playwright module
-- Create `src/browser/index.ts`
-- Initialize browser instance management
-- Handle headless/headed modes
-- Done when:
-  - Can launch and close browser programmatically
+async function parseMessage(text: string): Promise<ParsedMessage>
+```
 
-### Task 9.2 — Navigation primitives
-- `goToUrl(url)` — navigate and wait for load
-- `getCurrentUrl()` — return current URL
-- `goBack()`, `goForward()`, `refresh()`
-- Done when:
-  - Basic navigation works reliably
+**The prompt:**
+```
+You are a message parser. Given informal input, determine:
+1. Is this a task (actionable), note (informational), or event (calendar)?
+2. Extract the core content
+3. Extract any due date or event time mentioned
+4. Extract any project/context mentioned
 
-### Task 9.3 — Page reading primitives
-- `getPageText()` — extract visible text
-- `getPageTitle()` — return title
-- `screenshot()` — capture current state
-- `getElementText(selector)` — text from specific element
-- Done when:
-  - Can extract information from pages
+Input: "nancy thursday uat"
+Output: { "type": "task", "content": "follow up with Nancy about UAT", "dueDate": "thursday" }
 
-## Week 24: Interaction Primitives
+Input: "routing broken again"
+Output: { "type": "note", "content": "routing issue resurfaced" }
 
-### Task 9.4 — Click and type
-- `click(selector)` — click element with auto-wait
-- `type(selector, text)` — type into input
-- `clear(selector)` — clear input field
-- `pressKey(key)` — keyboard actions
-- Done when:
-  - Basic interactions work with proper waiting
+Input: "team sync tuesday 2pm 30min"
+Output: { "type": "event", "content": "team sync", "eventTime": "tuesday 2pm", "eventDuration": 30 }
 
-### Task 9.5 — Form handling
-- `fillForm(fields)` — fill multiple fields at once
-- `selectOption(selector, value)` — dropdowns
-- `checkBox(selector, checked)` — checkboxes
-- `submitForm(selector?)` — submit form
-- Done when:
-  - Can fill and submit arbitrary forms
+Be concise. When ambiguous, default to note.
+```
 
-### Task 9.6 — Waiting strategies
-- `waitForElement(selector, options)` — wait for element
-- `waitForNavigation()` — wait for page load
-- `waitForText(text)` — wait for text to appear
-- `waitForNetworkIdle()` — wait for requests to settle
-- Done when:
-  - Robust waiting for dynamic pages
+**Done when:**
+- Informal inputs get parsed correctly
+- Token usage logged
 
-## Week 25: Advanced Primitives
-
-### Task 9.7 — Data extraction
-- `extractTable(selector)` — table to JSON
-- `extractLinks(selector?)` — all links on page
-- `extractStructuredData(schema)` — extract data matching schema
-- Done when:
-  - Can pull structured data from pages
-
-### Task 9.8 — Error handling and recovery
-- Wrap all primitives in try/catch
-- Return structured results: `{ success, data?, error?, screenshotPath? }`
-- Auto-screenshot on failure
-- Done when:
-  - Failures are informative, not crashes
-
-### Task 9.9 — Session management
-- `saveCookies(path)`, `loadCookies(path)`
-- Handle login persistence
-- Done when:
-  - Can maintain logged-in sessions
-
-## Week 26: Playwright API Layer
-
-### Task 9.10 — CLI commands for browser
-- `ctx browser open <url>` — open and screenshot
-- `ctx browser text <url>` — extract text
-- `ctx browser form <url> --data '{...}'` — fill form
-- Done when:
-  - Browser actions available from CLI
-
-### Task 9.11 — REST endpoints for browser
-- POST `/browser/navigate` `{ url }`
-- GET `/browser/screenshot`
-- POST `/browser/click` `{ selector }`
-- POST `/browser/type` `{ selector, text }`
-- POST `/browser/form` `{ url, fields }`
-- POST `/browser/extract` `{ url, schema }`
-- Done when:
-  - Browser automation available via HTTP
-
-### Task 9.12 — Safety guardrails
-- URL allowlist/blocklist configuration
-- Timeout limits on all operations
-- No access to sensitive domains by default (banks, medical portals, etc.)
-- Done when:
-  - Playwright can't accidentally access dangerous sites
-
-**Phase 9 Complete Checkpoint:** You have browser automation primitives any client can invoke safely.
+**Time estimate:** 2 hours
 
 ---
 
-# Phase 10: MCP Compliance
-**Skills:** Protocol implementation, tool schema design, context management
+### Task 4.4: Wire it together
 
-## Week 27: MCP Foundation
+```
+Telegram message 
+  → Gateway receives
+  → Claude parses
+  → Router decides: task, note, or event?
+  → TrelloService.createCard() or ObsidianService.appendToDaily() or GoogleCalendarService.createEvent()
+  → Reply to Telegram with confirmation
+```
 
-### Task 10.1 — Study MCP spec + choose stable SDK
-- Read Anthropic's MCP documentation thoroughly
-- Pin **v1.x** of MCP SDK until v2 stabilizes
-- Done when:
-  - Can explain MCP handshake and tool invocation flow
+**Done when:**
+- Text "nancy thursday uat" to your bot
+- Trello card appears
+- Bot replies "✓ task: follow up with Nancy about UAT — due Thursday"
 
-### Task 10.2 — MCP server scaffold
-- Install MCP SDK (`@modelcontextprotocol/sdk` or equivalent)
-- Create `src/mcp/server.ts`
-- Implement discovery endpoint
-- Done when:
-  - MCP client can connect and list tools (even if empty)
-
-### Task 10.3 — Tool schemas (grouped by domain)
-- Trello tools
-- Calendar tools
-- Gmail tools
-- Notes Gateway tools
-- Browser tools
-- Done when:
-  - Schema file covers all operations with params, returns, examples
-
-## Week 28: Tool Migration
-
-### Task 10.4 — Trello tools via MCP
-- Wrap existing Trello functions as MCP tools
-- Done when:
-  - LLM can list boards, create/move/archive cards via MCP
-
-### Task 10.5 — Calendar tools via MCP
-- Wrap Google Calendar functions as MCP tools
-- Done when:
-  - LLM can list calendars, read/create events via MCP
-
-### Task 10.6 — Gmail tools via MCP
-- Wrap Gmail functions as MCP tools
-- Done when:
-  - LLM can search/read/send email via MCP
-
-### Task 10.7 — Notes tools via MCP (append-first)
-- Expose only safe defaults:
-  - `notes.search`
-  - `notes.get`
-  - `notes.create`
-  - `notes.append` (no full rewrite by default)
-- Done when:
-  - LLM can manage notes without destructive edits
-
-### Task 10.8 — Browser tools via MCP (guardrailed)
-- Expose Playwright primitives with safety checks
-- Done when:
-  - LLM can automate allowed URLs safely
-
-## Week 29: Context + Polish
-
-### Task 10.9 — Context injection
-- Provide useful defaults on connection:
-  - Default board/calendar/notebook IDs
-  - Common note paths (Inbox, Daily)
-  - User timezone
-- Done when:
-  - LLM has helpful context without oversharing
-
-### Task 10.10 — Error standardization
-- One error format across all MCP tools
-- Errors include actionable information
-- Done when:
-  - Failures are consistent and debuggable
-
-### Task 10.11 — Logging + observability
-- Log all tool invocations with timestamps
-- Track success/failure rates
-- Done when:
-  - You can audit what the LLM did
-
-### Task 10.12 — End-to-end workflow testing
-Test multi-tool workflows:
-- "Create calendar event, then append prep checklist to Daily note"
-- "Search email, extract action items, create Trello card"
-- "Check website, summarize findings, email summary to self"
-- Done when:
-  - Complex workflows complete reliably
-
-**Phase 10 Complete Checkpoint:** You have a fully MCP-compliant personal automation server.
+**Time estimate:** 2 hours
 
 ---
 
-# Project Complete
+### Task 4.5: Error handling
 
-## What You've Built
-A personal MCP server exposing:
-- **Trello** — task management
-- **Google Calendar** — scheduling
-- **Gmail** — communication
-- **Notes Gateway** — knowledge/notes (Markdown files you own)
-- **Playwright** — browser automation
+- If Claude parsing fails → default to note, log error
+- If Trello fails → reply with error, log details
+- If Obsidian fails → reply with error, log details
+- If Calendar fails → reply with error, log details
+- Never lose the original message
 
-Any MCP-compliant LLM can orchestrate your digital life.
+**Done when:** Failures are graceful and logged, original input preserved
 
-## What You've Learned
-- HTTP client and server development
-- OAuth2 and API authentication
-- Database persistence and caching
-- File-based data management
-- Protocol implementation (MCP)
-- Browser automation
-- Deployment and containerization
-- Security practices (token handling, audit logs, guardrails)
-- Error handling and observability
-- API design and documentation
+**Time estimate:** 1 hour
 
-## Timeline
+---
+
+# Phase 5: Deploy
+
+**Goal:** Runs 24/7 so you can use it from work.
+
+### Task 5.1: Dockerfile
+
+```dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY dist/ ./dist/
+CMD ["node", "dist/gateway/server.js"]
+```
+
+**Done when:** `docker build` and `docker run` work locally
+
+**Time estimate:** 1 hour
+
+---
+
+### Task 5.2: Fly.io setup
+
+- Install flyctl
+- `fly auth login`
+- `fly launch` — configure app
+
+**Done when:** `fly auth whoami` shows your account
+
+**Time estimate:** 30 minutes
+
+---
+
+### Task 5.3: Secrets configuration
+
+```bash
+fly secrets set TELEGRAM_BOT_TOKEN=xxx
+fly secrets set TRELLO_API_KEY=xxx
+fly secrets set TRELLO_TOKEN=xxx
+fly secrets set ANTHROPIC_API_KEY=xxx
+fly secrets set GOOGLE_CREDENTIALS=xxx
+fly secrets set OBSIDIAN_VAULT_PATH=/data/vault
+```
+
+**Done when:** All secrets configured in Fly.io
+
+**Time estimate:** 15 minutes
+
+---
+
+### Task 5.4: Persistent storage for Obsidian
+
+- Create Fly.io volume for vault data
+- Mount at `/data/vault`
+- Decide sync strategy (git-based recommended)
+
+**Done when:** Notes persist across deployments
+
+**Time estimate:** 1 hour
+
+---
+
+### Task 5.5: Deploy
+
+```bash
+fly deploy
+```
+
+**Done when:**
+- App is live
+- Telegram webhook points to Fly.io URL
+- Send message from iPad, card appears in Trello
+
+**Time estimate:** 1 hour (plus debugging)
+
+---
+
+### Task 5.6: Health check + monitoring
+
+- `GET /health` returns status
+- Fly.io dashboard shows logs
+- Set up alert if app crashes
+
+**Done when:** You can see what's happening in production
+
+**Time estimate:** 30 minutes
+
+---
+
+# Phase 6: Polish + Reliability
+
+### Task 6.1: Vault sync (git-based)
+
+- Vault is a git repo
+- Gateway pulls before read, commits+pushes after write
+- Can edit notes in Obsidian at home, gateway sees changes
+
+**Done when:** Two-way sync works between local Obsidian and deployed gateway
+
+**Time estimate:** 2 hours
+
+---
+
+### Task 6.2: Better Telegram UX
+
+- `/status` — show today's captured items
+- `/tasks` — show recent tasks created
+- `/undo` — archive the last created task
+
+**Done when:** Basic commands work
+
+**Time estimate:** 2 hours
+
+---
+
+### Task 6.3: Daily digest
+
+- Cron job at 6pm
+- Sends summary: "Today you captured 12 items: 8 tasks, 4 notes"
+- Lists any items that might need review
+
+**Done when:** Daily summary arrives automatically
+
+**Time estimate:** 1.5 hours
+
+---
+
+### Task 6.4: Batch processing
+
+For when you dump multiple thoughts at once:
+
+```
+"nancy thursday uat
+routing broken check with dev  
+mom birthday gift
+remind me to call doctor"
+```
+
+Should create 4 separate items.
+
+**Done when:** Multi-line input creates multiple items
+
+**Time estimate:** 1 hour
+
+---
+
+### Task 6.5: Calendar photo parsing
+
+**The killer feature for your weekly calendar sync.**
+
+- Telegram bot accepts image messages
+- Claude Vision extracts calendar events from photo
+- GoogleCalendarService creates events in bulk
+- Reply with summary: "✓ Created 14 events for Feb 3-7"
+
+**The prompt:**
+```
+Extract calendar events from this image of a work calendar.
+
+Return as JSON array:
+[
+  { "title": "UAT Sync", "date": "2025-02-03", "start": "14:00", "end": "14:30" },
+  { "title": "1:1 with Nancy", "date": "2025-02-04", "start": "10:00", "end": "10:30" }
+]
+
+Rules:
+- Use 24-hour time format
+- If end time unclear, assume 30 minutes
+- If you can't read something clearly, mark it: { "title": "UNCLEAR - something sync?", ... }
+- Include all visible events for the week
+```
+
+**Workflow:**
+```
+Sunday evening:
+1. Take photo of work calendar on iPad
+2. Send to Telegram bot
+3. Bot replies: "Found 14 events. Creating..."
+4. Bot replies: "✓ Created 14 events for Feb 3-7"
+5. Events sync to Apple Calendar automatically
+```
+
+**Done when:**
+- Photo of calendar → events in Google Calendar
+- Unclear items flagged for manual review
+- Apple Calendar shows synced events
+
+**Time estimate:** 3-4 hours
+
+---
+
+### Task 6.6: Calendar conflict detection
+
+When parsing calendar photo:
+- Check for existing events at same time
+- Warn: "⚠️ Conflict: 'UAT Sync' overlaps with existing 'Team Standup'"
+- Ask for confirmation or skip
+
+**Done when:** Duplicates don't pile up week over week
+
+**Time estimate:** 1 hour
+
+---
+
+# Timeline (Realistic)
+
+| Phase | Weeks | Outcome |
+|-------|-------|---------|
+| 1: Trello Foundation | 1 | TrelloService extracted, config working |
+| 2: Obsidian Foundation | 1-2 | Can write to vault from code |
+| 3: Google Calendar | 1-2 | Can create events, syncs to Apple Calendar |
+| 4: The Bot | 2 | Working locally, Claude parsing |
+| 5: Deploy | 1 | Live on Fly.io |
+| 6: Polish | 2-3 | Calendar photo parsing, daily digest, reliable |
+
+**Total to usable system: 8-12 weeks**
+
+With your schedule (2hrs weekday, 4hrs weekend), call it **10-14 weeks** to something you're using daily from your iPad at work.
+
+---
+
+# The Definition of Done
+
+**Scenario 1: Quick capture**
+
+You're in a 30-minute call. A thought hits. You grab your iPad:
+
+```
+"ask nancy about deadline change"
+```
+
+Send. Back in the meeting before anyone noticed.
+
+That night, the task is already in Trello. The raw capture is in your daily note.
+
+**Scenario 2: Weekly calendar sync**
+
+Sunday evening. You snap a photo of next week's calendar on your work machine.
+
+Send to Telegram.
+
+```
+Bot: Found 18 events for Feb 3-7. Creating...
+Bot: ✓ Created 18 events
+Bot: ⚠️ 2 unclear items saved to daily note for review
+```
+
+Monday morning, your Apple Calendar already has the week loaded.
+
+**That's the product.**
+
+---
+
+# Appendix A: Future Enhancements
+
+These were in the original task plan but cut to focus on the core problem. They're not abandoned — just deferred until the basics work. Reference material for when you're ready.
+
+---
+
+## SQLite Local Cache
+
+**What:** Local database storing boards, lists, cards. Faster queries, offline capability, local search.
+
+**Original tasks:**
+- Set up better-sqlite3
+- Create tables: boards, lists, cards
+- Sync from Trello API to local DB
+- `ctx trello search "keyword"` queries locally
+
+**Why deferred:** Not on critical path. API latency is fine for your volume.
+
+**When to add:** If you want instant search across all cards, or offline access to your task data.
+
+**Effort:** ~4-6 hours
+
+---
+
+## REST API Layer
+
+**What:** Your own HTTP API exposing all services. Any client can call it.
+
+**Original tasks:**
+- Express server with `/boards`, `/cards`, `/notes` endpoints
+- Input validation, consistent error responses
+- API key authentication
+- OpenAPI documentation
+
+**Why deferred:** Telegram webhook *is* your API. No other clients need HTTP access.
+
+**When to add:** If you build a web dashboard, want Shortcuts/Automator integration, or other tools to trigger actions.
+
+**Effort:** ~6-8 hours
+
+---
+
+## Gmail Integration
+
+**What:** Search and read emails programmatically. Surface information without opening Gmail.
+
+**Original tasks:**
+- Gmail API OAuth (read-only scope)
+- `ctx gmail search "from:boss subject:urgent"`
+- `ctx gmail read <message-id>`
+- Parse MIME/attachments
+
+**Why deferred:** Read-only email is lower value than capture. Your core pain is getting thoughts *out*, not searching emails.
+
+**When to add:** If you want the agent to surface email content, or trigger actions based on incoming mail.
+
+**Effort:** ~8-10 hours
+
+---
+
+## Playwright Browser Automation
+
+**What:** Headless browser control. Navigate, click, type, screenshot, scrape.
+
+**Original tasks:**
+- Browser instance management
+- Navigation primitives (go, back, refresh)
+- Interaction primitives (click, type, submit)
+- Data extraction (tables, links, structured data)
+- Session/cookie management
+- Safety guardrails (URL allowlist)
+
+**Why deferred:** High complexity, no immediate use case. Maintenance burden.
+
+**When to add:** If you have repetitive web tasks with no API — filling timesheets, scraping internal dashboards, etc.
+
+**Effort:** ~15-20 hours
+
+---
+
+## MCP Compliance
+
+**What:** Model Context Protocol — Anthropic's standard for tool integration. Makes your services discoverable by any MCP-compliant client.
+
+**Original tasks:**
+- Study MCP spec, pin stable SDK version
+- MCP server scaffold with discovery
+- Tool schemas for all services
+- Context injection (defaults, timezone)
+
+**Why deferred:** Spec still stabilizing. Your Telegram bot doesn't need it. Adds abstraction without immediate benefit.
+
+**When to add:** When MCP matures and you want Claude Desktop or other agents to call your services directly.
+
+**Effort:** ~10-12 hours
+
+---
+
+## Webhook Triggers
+
+**What:** Inbound webhooks from external services trigger agent actions.
+
+**Examples:**
+- GitHub push → create task to review PR
+- Calendar event starting → send reminder
+- Email from specific sender → surface in Telegram
+
+**Why deferred:** Reactive automation before proactive capture is working. Adds attack surface.
+
+**When to add:** When core system is stable and you want event-driven workflows.
+
+**Effort:** ~4-6 hours per integration
+
+---
+
+## Advanced Scheduling
+
+**What:** Complex cron jobs beyond the daily digest.
+
+**Examples:**
+- "Every Monday 8am, summarize last week's completed tasks"
+- "If nothing captured by 2pm, send a nudge"
+- "Every Friday, generate weekly review template"
+
+**Why deferred:** Daily digest (Task 6.3) covers the basics. Complex scheduling adds edge cases.
+
+**When to add:** When you want proactive agent behavior, reminders, or automated reviews.
+
+**Effort:** ~3-4 hours per scheduled task
+
+---
+
+## Vector Search for Notes
+
+**What:** Semantic search using embeddings. Find notes by meaning, not just keywords.
+
+**Original approach:**
+- Local embeddings (sqlite-vss or similar)
+- `ctx notes semantic "that conversation about deadlines"`
+- No external API calls
+
+**Why deferred:** Your vault is small. Grep/ripgrep handles keyword search fine.
+
+**When to add:** If your vault grows large and you're missing relevant notes with keyword search.
+
+**Effort:** ~6-8 hours
+
+---
+
+## Multi-User Support
+
+**What:** Multiple people using the system with isolated data.
+
+**Would require:**
+- User authentication
+- Per-user config and tokens
+- Access control
+- Isolated Trello boards / vaults per user
+
+**Why deferred:** You're the only user. Telegram bot token *is* your auth.
+
+**When to add:** Probably never. If family wants this, they get their own instance.
+
+**Effort:** ~15-20 hours (significant refactor)
+
+---
+
+## Alternative Input Channels
+
+**What:** Beyond Telegram — SMS, email-to-task, Slack, etc.
+
+**Options:**
+- Twilio SMS (costs money per message)
+- Email parsing (send to tasks@yourdomain.com)
+- Slack bot (if you used Slack personally)
+
+**Why deferred:** Telegram works. It's free. It's on all your devices.
+
+**When to add:** If Telegram becomes unavailable or you want redundancy.
+
+**Effort:** ~4-8 hours per channel
+
+---
+
+# Appendix B: Extended Learning Path (Original Phases)
+
+The original task plan was designed as a comprehensive software engineering curriculum. If you want the full educational experience later, here are the phases that were condensed or removed. They teach valuable skills even if they're not on the critical path to your product.
+
+---
+
+## Original Phase 2: Data Persistence (SQLite Focus)
+
+**Skills learned:** Database design, SQL, caching strategies, cache invalidation
+
+### Tasks:
+- 2.1: Store config in ~/.trello-cli/config.json
+- 2.2: Cache boards/lists to JSON with timestamps
+- 2.3: Cache invalidation (--refresh flag, 5-minute expiry)
+- 2.4: Use default board (fewer arguments for common ops)
+- 2.5: Set up SQLite with better-sqlite3
+- 2.6: Migrate caching to SQLite
+- 2.7: Add local search across cards
+
+**Why valuable:** Understanding persistence, caching, and databases is fundamental. JSON files work for config; SQLite is the right tool when you need queries.
+
+---
+
+## Original Phase 3: Build Your Own API
+
+**Skills learned:** HTTP servers, routing, REST design, input validation, auth
+
+### Tasks:
+- 3.1: Hello World Express server
+- 3.2: GET /boards endpoint
+- 3.3: GET /boards/:boardId/lists with 404 handling
+- 3.4: Cards endpoints (GET and POST)
+- 3.5: PUT /cards/:cardId/move, DELETE /cards/:cardId
+- 3.6: Input validation with helpful 400 errors
+- 3.7: Consistent error response format
+- 3.8: Bearer token authentication
+- 3.9: API documentation (API.md)
+- 3.10: Basic tests with vitest/jest
+
+**Why valuable:** Every backend developer needs to build APIs. Understanding REST, validation, and auth from the inside makes you better at consuming them too.
+
+---
+
+## Original Phase 4: Deployment
+
+**Skills learned:** Docker, environment config, production concerns, monitoring
+
+### Tasks:
+- 4.1: Environment variables for all secrets
+- 4.2: Health check endpoint
+- 4.3: Request logging (method, path, status, duration)
+- 4.4: Dockerfile creation
+- 4.5: Fly.io setup
+- 4.6: First deploy with secrets
+- 4.7: Production verification
+- 4.8: Basic monitoring setup
+
+**Why valuable:** Getting code running on your machine to running in production is a critical skill gap for many developers.
+
+---
+
+## Original Phase 5: LLM Integration
+
+**Skills learned:** Tool schemas, function calling, debugging distributed systems
+
+### Tasks:
+- 5.1: Define JSON schema for your API
+- 5.2: Test with Claude using your API as a tool
+- 5.3: Debug a real production issue (something *will* break)
+
+**Why valuable:** LLM tool use is the future. Understanding how to make your APIs LLM-friendly is increasingly important.
+
+---
+
+## Original Phase 6: Google Calendar (Full Version)
+
+**Skills learned:** OAuth2 deeply, Google APIs, timezone handling, recurring events
+
+### Additional tasks beyond current plan:
+- 6.7: Search events by text
+- 6.9: Update events without clobbering fields
+- 6.12: Recurring events (RRULE parsing and creation)
+- 6.13: Calendar REST API endpoints
+
+**Why valuable:** The full OAuth2 flow and Google API patterns transfer to any Google service.
+
+---
+
+## Original Phase 7: Gmail Integration
+
+**Skills learned:** MIME parsing, RFC 2822, email threading, Gmail search operators
+
+### Tasks:
+- 7.1: Enable Gmail API, incremental scopes
+- 7.2: List messages with filters and pagination
+- 7.3: Read message with MIME parsing
+- 7.4: Gmail search operators
+- 7.5: Send email (RFC 2822 raw format)
+- 7.6: Reply with correct threading (In-Reply-To, References headers)
+- 7.7: Draft management
+- 7.8: Labels
+- 7.9: Attachments
+- 7.10: Gmail REST endpoints
+
+**Why valuable:** Email is deeply weird. Understanding MIME and threading makes you appreciate how much complexity email clients hide.
+
+---
+
+## Original Phase 8: Notes Gateway (Full Version)
+
+**Skills learned:** File I/O, sync strategies, conflict resolution, append-only safety
+
+### Additional tasks beyond current plan:
+- 8.2: REST auth with API key
+- 8.3: Audit logging
+- 8.5: Safety guardrails (path traversal prevention, denylist)
+- 8.6: Git-based conflict strategy
+- 8.7: Agent-friendly templates with standard sections
+- 8.8: Optional embeddings/vector search
+
+**Why valuable:** Building a safe file-based system that agents can write to teaches you about trust boundaries.
+
+---
+
+## Original Phase 9: Playwright Browser Automation
+
+**Skills learned:** Browser automation, selectors, waiting strategies, error recovery
+
+### Tasks:
+- 9.1: Browser instance management
+- 9.2: Navigation primitives
+- 9.3: Page reading (text, title, screenshot)
+- 9.4: Click and type with auto-wait
+- 9.5: Form handling
+- 9.6: Waiting strategies (element, navigation, text, network idle)
+- 9.7: Data extraction (tables, links, structured)
+- 9.8: Error handling with auto-screenshot on failure
+- 9.9: Session/cookie management
+- 9.10: CLI commands for browser
+- 9.11: REST endpoints for browser
+- 9.12: Safety guardrails
+
+**Why valuable:** Browser automation is powerful but fragile. Learning to build robust automation teaches patience and defensive coding.
+
+---
+
+## Original Phase 10: MCP Compliance
+
+**Skills learned:** Protocol implementation, tool schema design, context management
+
+### Tasks:
+- 10.1: Study MCP spec thoroughly
+- 10.2: MCP server scaffold with discovery
+- 10.3: Tool schemas for all domains
+- 10.4-10.8: Wrap all services as MCP tools
+- 10.9: Context injection (defaults, timezone)
+- 10.10: Error standardization
+- 10.11: Logging and observability
+- 10.12: End-to-end workflow testing
+
+**Why valuable:** Understanding protocols and making your tools interoperable is senior-level thinking.
+
+---
+
+## Original Timeline
+
 | Phases | Weeks |
 |--------|-------|
 | 1-5 (Trello CLI + API + Deploy) | ~15 |
 | 6-10 (Calendar, Gmail, Notes, Playwright, MCP) | ~17 |
 | **Total** | **~32 weeks** |
 
-With life friction (family, work chaos, energy dips): **40-45 weeks**. Under a year.
+With life friction: **40-45 weeks** — under a year to comprehensive full-stack + AI tooling skills.
 
-## Maintenance Notes
-- Keep dependencies pinned; upgrade intentionally
-- Back up `~/.ctx/` (configs, tokens, audit logs)
-- Back up your notes vault (Git handles this if you chose Option 1)
-- Review safety allowlist/denylist quarterly
-- Rotate API keys periodically
-- Monitor for Google API deprecations
-- The learning doesn't stop—extend as your needs evolve
+---
+
+## The Trade-off
+
+**Focused plan (current):** 10-14 weeks to a usable product. Learn by building what you need.
+
+**Extended plan (appendix):** 40-45 weeks to comprehensive education. Learn by building everything.
+
+Both are valid. The focused plan gets you capturing thoughts from your iPad faster. The extended plan makes you a more complete engineer. You can always come back to these phases later.

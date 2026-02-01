@@ -11,8 +11,11 @@
 - `URL.searchParams.set()` for building query strings safely
 - API parameter names must match documentation exactly
 - Multi-step API workflows (board → list → card ID chains)
+- Ternary for conditional values (`condition ? valueIfTrue : valueIfFalse`)
+- `param: string | undefined` vs `param?: string` — Commander always passes args, use former
 
 ## Still Working Through
+- Commander `.option()` — options come as object in last callback parameter, different from `.argument()`
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood
 - Error re-throwing — why `throw error` in catch blocks, how errors propagate
 - TypeScript utility types — `Record<K, V>`, what others exist, when to use them
@@ -175,6 +178,22 @@ When a meaningful bug occurs, log:
 - Chalk + padEnd interaction: pad the string BEFORE coloring
   - Wrong: `chalk.white('NAME').padEnd(width)` — pads ANSI codes too
   - Right: `chalk.white('NAME'.padEnd(width))` — pads raw string, then colors
+
+**2025-01-30:** Task 1.16 complete - Due date manipulation
+
+- Added `--due` option to create-card command
+- Created `setDue()` and `clearDue()` API functions
+- Created `set-due` and `clear-due` CLI commands
+- Learned: Commander `.option()` vs `.argument()`
+  - `.argument()` = positional, order matters
+  - `.option()` = named flag like `--due`, can appear anywhere
+  - Options come as an object in the last callback parameter
+- Learned: `param: string | undefined` vs `param?: string`
+  - `param?` means "can omit when calling"
+  - `param: T | undefined` means "always passed, but value might be undefined"
+  - Commander always passes all args, so use the second form
+- Ternary for conditional values: `due ? new Date(due).toISOString() : undefined`
+- Trello accepts `due: 'null'` as a string to clear due dates
 
 ---
 
