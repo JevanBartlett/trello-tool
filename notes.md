@@ -13,6 +13,7 @@
 - Multi-step API workflows (board → list → card ID chains)
 - Ternary for conditional values (`condition ? valueIfTrue : valueIfFalse`)
 - `param: string | undefined` vs `param?: string` — Commander always passes args, use former
+- `import type` vs `import` — use `import type` for types only used in annotations, regular `import` for runtime values (schemas)
 
 ## Still Working Through
 - Commander `.option()` — options come as object in last callback parameter, different from `.argument()`
@@ -28,6 +29,9 @@
 - Separation of concerns — API module throws structured errors, CLI formats for user
 - `?.` optional chaining — short-circuits to undefined when left side is null
 - `??` nullish coalescing — fallback for null/undefined, watch operator precedence
+- `Result<T>` pattern — returning `{ success: true, data }` or `{ success: false, error }` instead of throwing
+- `safeParse` vs `parse` — safeParse returns result object, parse throws on failure
+- Class constructor shorthand — `private param: type` in constructor declares + assigns property
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -194,6 +198,23 @@ When a meaningful bug occurs, log:
   - Commander always passes all args, so use the second form
 - Ternary for conditional values: `due ? new Date(due).toISOString() : undefined`
 - Trello accepts `due: 'null'` as a string to clear due dates
+
+**2025-01-31:** Task 1.18a & 1.18b complete - TrelloService with Result pattern
+
+- Created `Result<T>` type in `src/types/result.ts`
+  - `Success<T> = { success: true, data: T }`
+  - `Failure = { success: false, error: { code, message } }`
+  - Union type: `Result<T> = Success<T> | Failure`
+- Created `TrelloService` class in `src/services/trello-service.ts`
+  - Constructor takes apiKey and token (dependency injection)
+  - All methods return `Result<T>` instead of throwing
+  - All methods use `safeParse` instead of `parse`
+- **Why the service?** Bot needs to stay running on errors. CLI can crash, bot can't.
+  - CLI uses client.ts with throws + try/catch
+  - Bot will use TrelloService with Result pattern + `if (!result.success)` checks
+- Learned: `import type` for type-only imports (types erased at compile time)
+- Learned: Constructor shorthand `private param: type` declares + assigns class property
+- Delegated: remaining service methods (mechanical repetition, pattern understood)
 
 ---
 

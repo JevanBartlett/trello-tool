@@ -201,7 +201,7 @@ export async function getMe(): Promise<TrelloMember> {
   return MemberSchema.parse(memberInfo);
 }
 
-export async function getList(boardID: string): Promise<TrelloList[]> {
+export async function getLists(boardID: string): Promise<TrelloList[]> {
   const lists = await getData(`boards/${boardID}/lists`);
   return z.array(ListSchema).parse(lists);
 }

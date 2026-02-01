@@ -11,7 +11,7 @@ import {
   createList,
   getBoards,
   getCards,
-  getList,
+  getLists,
   getMe,
   moveCard,
   setDesc,
@@ -71,7 +71,7 @@ program
   .argument('<board-id>')
   .action(async (boardID: string) => {
     try {
-      const list = await getList(boardID);
+      const list = await getLists(boardID);
 
       const maxLength = Math.max(...list.map((l) => l.name.length));
 

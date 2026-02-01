@@ -265,36 +265,45 @@ Bot (3:12pm): ✓ note added to daily
 
 ---
 
-### Task 1.18: Extract TrelloService
+#### Task 1.18: Extract TrelloService
 
 **This is the critical refactor.** Create the service layer that both CLI and future bot will use.
 
-**Create `src/services/trello-service.ts`:**
+#### Subtasks
+
+- [x] **1.18a:** Define `Result<T>` type in `src/types/result.ts`
+- [x] **1.18b:** Create `TrelloService` class in `src/services/trello-service.ts`
+  - All methods use `safeParse` instead of `parse`
+  - All methods return `Result<T>` instead of throwing
+  - Constructor takes `apiKey` and `token`
+- [ ] **1.18c:** Refactor all CLI commands to use service and handle success/failure
+
+**TrelloService interface:**
 ```typescript
 export class TrelloService {
   constructor(private apiKey: string, private token: string) {}
   
-  async getBoards(): Promise<Board[]>
-  async getLists(boardId: string): Promise<List[]>
-  async getCards(listId: string): Promise<Card[]>
-  async createCard(params: CreateCardParams): Promise<Card>
-  async updateCard(id: string, params: UpdateCardParams): Promise<Card>
-  async moveCard(id: string, targetListId: string): Promise<Card>
-  async archiveCard(id: string): Promise<void>
+  async getBoards(): Promise<Result<Board[]>>
+  async getLists(boardId: string): Promise<Result<List[]>>
+  async getCards(listId: string): Promise<Result<Card[]>>
+  async createCard(params: CreateCardParams): Promise<Result<Card>>
+  async updateCard(id: string, params: UpdateCardParams): Promise<Result<Card>>
+  async moveCard(id: string, targetListId: string): Promise<Result<Card>>
+  async archiveCard(id: string): Promise<Result<void>>
+  async setDue(id: string, dueDate: string): Promise<Result<Card>>
+  async clearDue(id: string): Promise<Result<Card>>
 }
 ```
 
-**Refactor all CLI commands to use the service:**
-- Commands become thin wrappers
-- All Trello API logic lives in one place
-
 **Done when:**
+
 - All existing CLI commands work identically
+- No `parse()` calls remain in service layer
 - No fetch calls remain in command files
+- Bad API responses produce clean errors, not stack traces
 - Service is importable by other modules
 
-**Time estimate:** 2-3 hours
-
+**Time estimate:** 3-4 hours
 ---
 
 ### Task 1.19: Configuration file

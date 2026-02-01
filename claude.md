@@ -47,7 +47,7 @@ Capture thoughts in 5-second windows during back-to-back meetings. Route them to
 
 ## Current Project Status
 
-**Current Phase:** 1 (Trello Foundation) — Task 1.17 next (Add help text)
+**Current Phase:** 1 (Trello Foundation) — Task 1.18c next (Refactor CLI to use TrelloService)
 
 **Phases:**
 1. Trello Foundation — TrelloService extracted, config working
