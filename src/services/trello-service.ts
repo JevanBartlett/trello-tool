@@ -9,6 +9,54 @@ export class TrelloService {
     private token: string,
   ) {}
 
+  private async request<T>(
+    url: string,
+    schema: z.ZodSchema<T>,
+    options?: RequestInit,
+  ): Promise<Result<T>> {
+    let response: Response;
+
+    try {
+      response = await fetch(url, options);
+    } catch {
+      return {
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: 'Failed to connect to Trello API',
+        },
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: `Request failed with status ${response.status}`,
+        },
+      };
+    }
+
+    const data: unknown = await response.json();
+    const parsed = schema.safeParse(data);
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid response from Trello API',
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: parsed.data,
+    };
+  }
+
   private buildURL(path: string, params?: Record<string, string>): string {
     const url = new URL(path, process.env.TRELLO_BASE_URL);
     url.searchParams.set('key', this.apiKey);
@@ -23,417 +71,87 @@ export class TrelloService {
     return url.toString();
   }
 
+  // === GET methods ===
+
   async getBoards(): Promise<Result<TrelloBoard[]>> {
     const url = this.buildURL('members/me/boards');
-    const response = await fetch(url);
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-    const data: unknown = await response.json();
-    const parsed = z.array(BoardSchema).safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-    return {
-      success: true,
-      data: parsed.data,
-    };
+    return this.request(url, z.array(BoardSchema));
   }
 
-  async getLists(boardID: string): Promise<Result<TrelloList[]>> {
-    const url = this.buildURL(`boards/${boardID}/lists`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-    const data: unknown = await response.json();
-    const parsed = z.array(ListSchema).safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-    return {
-      success: true,
-      data: parsed.data,
-    };
+  async getLists(boardId: string): Promise<Result<TrelloList[]>> {
+    const url = this.buildURL(`boards/${boardId}/lists`);
+    return this.request(url, z.array(ListSchema));
   }
+
+  async getCards(listId: string): Promise<Result<TrelloCard[]>> {
+    const url = this.buildURL(`lists/${listId}/cards`);
+    return this.request(url, z.array(CardSchema));
+  }
+
+  // === POST methods ===
 
   async createCard(
-    listID: string,
+    listId: string,
     cardName: string,
     description?: string,
     due?: string,
   ): Promise<Result<TrelloCard>> {
+    const url = this.buildURL('cards');
     const body = {
       name: cardName,
-      idList: listID,
+      idList: listId,
       desc: description,
       due: due ? new Date(due).toISOString() : undefined,
     };
-    const url = this.buildURL('cards');
-    const response = await fetch(url, {
+    return this.request(url, CardSchema, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async setDue(cardId: string, dueDate: string): Promise<Result<TrelloCard>> {
-    const path = `cards/${cardId}`;
-    const date = new Date(dueDate);
-    const url = this.buildURL(path, { due: date.toISOString() });
-
-    const response: Response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async getCards(listID: string): Promise<Result<TrelloCard[]>> {
-    const url = this.buildURL(`lists/${listID}/cards`);
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = z.array(CardSchema).safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async moveCard(cardId: string, targetListId: string): Promise<Result<TrelloCard>> {
-    const url = this.buildURL(`cards/${cardId}`, { idList: targetListId });
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async archiveCard(cardId: string): Promise<Result<TrelloCard>> {
-    const url = this.buildURL(`cards/${cardId}`, { closed: 'true' });
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async clearDue(cardId: string): Promise<Result<TrelloCard>> {
-    const url = this.buildURL(`cards/${cardId}`, { due: 'null' });
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
-  }
-
-  async setDesc(cardId: string, desc: string): Promise<Result<TrelloCard>> {
-    const url = this.buildURL(`cards/${cardId}`, { desc: desc });
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = CardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
   }
 
   async createBoard(name: string): Promise<Result<TrelloBoard>> {
     const url = this.buildURL('boards');
-    const response = await fetch(url, {
+    return this.request(url, BoardSchema, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
-
-    const data: unknown = await response.json();
-    const parsed = BoardSchema.safeParse(data);
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: parsed.data,
-    };
   }
 
   async createList(boardId: string, name: string): Promise<Result<TrelloList>> {
     const url = this.buildURL('lists');
-    const response = await fetch(url, {
+    return this.request(url, ListSchema, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, idBoard: boardId }),
     });
+  }
 
-    if (!response.ok) {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: `Request failed with status ${response.status}`,
-        },
-      };
-    }
+  // === PUT methods ===
 
-    const data: unknown = await response.json();
-    const parsed = ListSchema.safeParse(data);
+  async moveCard(cardId: string, targetListId: string): Promise<Result<TrelloCard>> {
+    const url = this.buildURL(`cards/${cardId}`, { idList: targetListId });
+    return this.request(url, CardSchema, { method: 'PUT' });
+  }
 
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response from Trello Api',
-        },
-      };
-    }
+  async archiveCard(cardId: string): Promise<Result<TrelloCard>> {
+    const url = this.buildURL(`cards/${cardId}`, { closed: 'true' });
+    return this.request(url, CardSchema, { method: 'PUT' });
+  }
 
-    return {
-      success: true,
-      data: parsed.data,
-    };
+  async setDue(cardId: string, dueDate: string): Promise<Result<TrelloCard>> {
+    const url = this.buildURL(`cards/${cardId}`, { due: new Date(dueDate).toISOString() });
+    return this.request(url, CardSchema, { method: 'PUT' });
+  }
+
+  async clearDue(cardId: string): Promise<Result<TrelloCard>> {
+    const url = this.buildURL(`cards/${cardId}`, { due: 'null' });
+    return this.request(url, CardSchema, { method: 'PUT' });
+  }
+
+  async setDesc(cardId: string, desc: string): Promise<Result<TrelloCard>> {
+    const url = this.buildURL(`cards/${cardId}`, { desc });
+    return this.request(url, CardSchema, { method: 'PUT' });
   }
 }

@@ -3,23 +3,10 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import 'dotenv/config';
-import {
-  archiveCard,
-  clearDue,
-  createBoard,
-  createCard,
-  createList,
-  getBoards,
-  getCards,
-  getLists,
-  getMe,
-  moveCard,
-  setDesc,
-  setDue,
-} from './api/client.js';
-import { TrelloApiError } from './api/errors.js';
+import { TrelloService } from './services/trello-service.js';
 
 const program = new Command();
+const service = new TrelloService(process.env.TRELLO_API_KEY!, process.env.TRELLO_TOKEN!);
 
 program.name('trello').description('CLI tool for interacting with Trello API').version('0.1.0');
 
@@ -28,36 +15,23 @@ program
   .description('List all your Trello boards')
   .action(async () => {
     try {
-      const boards = await getBoards();
+      const result = await service.getBoards();
+      if (!result.success) {
+        console.error(result.error.message);
+        return;
+      }
 
-      const maxLength = Math.max(...boards.map((b) => b.name.length));
+      const maxLength = Math.max(...result.data.map((b) => b.name.length));
 
       const columnWidth = maxLength + 4;
 
       console.log(chalk.white('BOARD NAME'.padEnd(columnWidth)) + chalk.blue('BOARD ID'));
-      for (const board of boards) {
+      for (const board of result.data) {
         console.log(chalk.white(board.name.padEnd(columnWidth)) + chalk.blue(board.id));
       }
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
-      } else {
-        console.error('An unexpected error occurred');
-      }
-      process.exit(1);
-    }
-  });
-
-program
-  .command('get-user')
-  .description('Display current user info')
-  .action(async () => {
-    try {
-      const member = await getMe();
-      console.log(chalk.green('Logged in As:'), chalk.blue(`(${member.fullName})`));
-    } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -69,28 +43,33 @@ program
   .command('get-list')
   .description('List all lists on a board')
   .argument('<board-id>')
-  .action(async (boardID: string) => {
+  .action(async (boardId: string) => {
     try {
-      const list = await getLists(boardID);
+      const result = await service.getLists(boardId);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
 
-      const maxLength = Math.max(...list.map((l) => l.name.length));
-
+      const maxLength = Math.max(...result.data.map((l) => l.name.length));
       const columnWidth = maxLength + 4;
+
       console.log(
         chalk.white('NAME'.padEnd(columnWidth)) +
           chalk.blue('ID'.padEnd(columnWidth)) +
-          chalk.green('BOARD ID'.padEnd(columnWidth)),
+          chalk.green('BOARD ID'),
       );
 
-      for (const item of list) {
+      for (const item of result.data) {
         console.log(
           chalk.white(item.name.padEnd(columnWidth)) +
-            chalk.blue(item.id.padEnd(columnWidth) + chalk.green(item.idBoard.padEnd(columnWidth))),
+            chalk.blue(item.id.padEnd(columnWidth)) +
+            chalk.green(item.idBoard),
         );
       }
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -102,13 +81,17 @@ program
   .command('get-cards')
   .description('List all cards in a list')
   .argument('<list-id>')
-  .action(async (listID: string) => {
+  .action(async (listId: string) => {
     try {
-      const cards = await getCards(listID);
+      const result = await service.getCards(listId);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
 
-      const maxLength = Math.max(...cards.map((c) => c.name.length));
-      const maxLenId = Math.max(...cards.map((c) => c.id.length));
-      const maxLenDue = Math.max(...cards.map((c) => c.due?.length ?? 0));
+      const maxLength = Math.max(...result.data.map((c) => c.name.length));
+      const maxLenId = Math.max(...result.data.map((c) => c.id.length));
+      const maxLenDue = Math.max(...result.data.map((c) => c.due?.length ?? 0));
 
       const nameWidth = maxLength + 4;
       const idWidth = maxLenId + 4;
@@ -120,15 +103,16 @@ program
           chalk.green('DUE DATE'.padEnd(dueWidth)),
       );
 
-      for (const item of cards) {
+      for (const item of result.data) {
         console.log(
           chalk.white(item.name.padEnd(nameWidth)) +
-            chalk.blue(item.id.padEnd(idWidth) + chalk.green((item.due ?? '-').padEnd(dueWidth))),
+            chalk.blue(item.id.padEnd(idWidth)) +
+            chalk.green((item.due ?? '-').padEnd(dueWidth)),
         );
       }
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -145,17 +129,25 @@ program
   .argument('[description]')
   .action(
     async (
-      listID: string,
+      listId: string,
       cardName: string,
       description: string | undefined,
       options: { due?: string },
     ) => {
       try {
-        const card = await createCard(listID, cardName, description, options.due);
-        console.log(chalk.green('Created card:'), card.name, chalk.blue(`(${card.id})`));
+        const result = await service.createCard(listId, cardName, description, options.due);
+        if (!result.success) {
+          console.error(result.error.message);
+          process.exit(1);
+        }
+        console.log(
+          chalk.green('Created card:'),
+          result.data.name,
+          chalk.blue(`(${result.data.id})`),
+        );
       } catch (error) {
-        if (error instanceof TrelloApiError) {
-          console.error(`Error: ${error.message} (status ${error.statusCode})`);
+        if (error instanceof Error) {
+          console.error(`Error: ${error.message}`);
         } else {
           console.error('An unexpected error occurred');
         }
@@ -171,11 +163,15 @@ program
   .argument('<targetListId>')
   .action(async (cardId: string, targetListId: string) => {
     try {
-      const card = await moveCard(cardId, targetListId);
-      console.log(chalk.green('Moved card:'), card.name, chalk.blue(`(${card.id})`));
+      const result = await service.moveCard(cardId, targetListId);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(chalk.green('Moved card:'), result.data.name, chalk.blue(`(${result.data.id})`));
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -189,11 +185,19 @@ program
   .argument('<cardId>')
   .action(async (cardId: string) => {
     try {
-      const card = await archiveCard(cardId);
-      console.log(chalk.green('Archived card:'), card.name, chalk.blue(`(${card.id})`));
+      const result = await service.archiveCard(cardId);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('Archived card:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -208,11 +212,19 @@ program
   .argument('<dueDate>')
   .action(async (cardId: string, dueDate: string) => {
     try {
-      const card = await setDue(cardId, dueDate);
-      console.log(chalk.green('Set Due Date:'), card.name, chalk.blue(`(${card.id})`));
+      const result = await service.setDue(cardId, dueDate);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('Set Due Date:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -226,11 +238,19 @@ program
   .argument('<cardId>')
   .action(async (cardId: string) => {
     try {
-      const card = await clearDue(cardId);
-      console.log(chalk.green('Cleared Due Date:'), card.name, chalk.blue(`(${card.id})`));
+      const result = await service.clearDue(cardId);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('Cleared Due Date:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -245,11 +265,19 @@ program
   .argument('<desc>')
   .action(async (cardId: string, desc: string) => {
     try {
-      const card = await setDesc(cardId, desc);
-      console.log(chalk.green('Updated Desc:'), card.name, chalk.blue(`(${card.id})`));
+      const result = await service.setDesc(cardId, desc);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('Updated Desc:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -263,11 +291,19 @@ program
   .argument('<name>')
   .action(async (name: string) => {
     try {
-      const board = await createBoard(name);
-      console.log(chalk.green('Board Created:'), board.name, chalk.blue(`(${board.id})`));
+      const result = await service.createBoard(name);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('Board Created:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
@@ -282,11 +318,19 @@ program
   .argument('<name>')
   .action(async (boardId: string, name: string) => {
     try {
-      const list = await createList(boardId, name);
-      console.log(chalk.green('List Created:'), list.name, chalk.blue(`(${list.id})`));
+      const result = await service.createList(boardId, name);
+      if (!result.success) {
+        console.error(result.error.message);
+        process.exit(1);
+      }
+      console.log(
+        chalk.green('List Created:'),
+        result.data.name,
+        chalk.blue(`(${result.data.id})`),
+      );
     } catch (error) {
-      if (error instanceof TrelloApiError) {
-        console.error(`Error: ${error.message} (status ${error.statusCode})`);
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
       } else {
         console.error('An unexpected error occurred');
       }
