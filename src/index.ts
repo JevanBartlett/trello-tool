@@ -42,7 +42,7 @@ config
 
 config
   .command('show')
-  .description('show current configuation')
+  .description('show current configuration')
   .action(() => {
     const result = configService.getConfig();
     if (!result.success) {
@@ -62,7 +62,7 @@ program
       const result = await service.getBoards();
       if (!result.success) {
         console.error(result.error.message);
-        return;
+        process.exit(1);
       }
 
       const maxLength = Math.max(...result.data.map((b) => b.name.length));
@@ -84,7 +84,7 @@ program
   });
 
 program
-  .command('get-list')
+  .command('get-lists')
   .description('List all lists on a board')
   .argument('<board-id>')
   .action(async (boardId: string) => {
