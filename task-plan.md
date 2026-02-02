@@ -243,29 +243,29 @@ Bot (3:12pm): ✓ note added to daily
 
 ---
 
-### Task 1.16: Update card description
+### ✅ Task 1.16: Update card description
 
 - Add `set-desc` command to update description on existing card
 - `ctx trello set-desc <card-id> "new description"`
 
 **Done when:** Can update card descriptions from CLI
 
-**Time estimate:** 30 minutes
+**Completed:** Added setDesc() to TrelloService and set-desc CLI command.
 
 ---
 
-### Task 1.17: Add help text
+### ✅ Task 1.17: Add help text
 
 - Add descriptions to all commands
 - `trello --help` shows useful info
 
 **Done when:** A stranger could figure out how to use it
 
-**Time estimate:** 30 minutes
+**Completed:** All commands have .description() calls. Help text shows usage.
 
 ---
 
-#### Task 1.18: Extract TrelloService
+#### ✅ Task 1.18: Extract TrelloService
 
 **This is the critical refactor.** Create the service layer that both CLI and future bot will use.
 
@@ -276,7 +276,7 @@ Bot (3:12pm): ✓ note added to daily
   - All methods use `safeParse` instead of `parse`
   - All methods return `Result<T>` instead of throwing
   - Constructor takes `apiKey` and `token`
-- [ ] **1.18c:** Refactor all CLI commands to use service and handle success/failure
+- [x] **1.18c:** Refactor all CLI commands to use service and handle success/failure
 
 **TrelloService interface:**
 ```typescript
@@ -306,7 +306,7 @@ export class TrelloService {
 **Time estimate:** 3-4 hours
 ---
 
-### Task 1.19: Configuration file
+### ✅ Task 1.19: Configuration file
 
 - Create `~/.ctx/config.json`
 - Store default board ID and inbox list ID
@@ -317,7 +317,7 @@ export class TrelloService {
 - `trelloService.createCard({ name: "test" })` uses default inbox list
 - Config persists across sessions
 
-**Time estimate:** 1 hour
+**Completed:** Created ConfigService with Zod validation, proper file permissions. Added config subcommands (set-default-board, set-default-list, show). Modified create-card to use --list option with fallback to configured default inbox.
 
 ---
 
