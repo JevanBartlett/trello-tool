@@ -3,12 +3,56 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import 'dotenv/config';
+import { ConfigService } from './services/config-service.js';
 import { TrelloService } from './services/trello-service.js';
 
 const program = new Command();
 const service = new TrelloService(process.env.TRELLO_API_KEY!, process.env.TRELLO_TOKEN!);
+const configService = new ConfigService();
+
+const config = program.command('config').description('Manage configuration');
 
 program.name('trello').description('CLI tool for interacting with Trello API').version('0.1.0');
+
+config
+  .command('set-default-board')
+  .description('Set default board ID')
+  .argument('<board-id>')
+  .action((boardId: string) => {
+    const result = configService.setDefaultBoard(boardId);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green('Default board set:'), boardId);
+  });
+
+config
+  .command('set-default-list')
+  .description('Set default list ID')
+  .argument('<list-id>')
+  .action((listID: string) => {
+    const result = configService.setDefaultInbox(listID);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green('Default list set:'), listID);
+  });
+
+config
+  .command('show')
+  .description('show current configuation')
+  .action(() => {
+    const result = configService.getConfig();
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.white('Current config:'));
+    console.log(chalk.blue('  Board ID:'), result.data.defaultBoardId ?? '(not set)');
+    console.log(chalk.blue('  Inbox List ID:'), result.data.defaultInboxListId ?? '(not set)');
+  });
 
 program
   .command('get-boards')
@@ -122,20 +166,35 @@ program
 
 program
   .command('create-card')
-  .description('Create a new card in a list')
-  .argument('<list-id>')
+  .description('Create a new card in a list (uses default inbox if no --list provided)')
   .argument('<name>')
-  .option('--due <date>', 'Due date for the card')
   .argument('[description]')
+  .option('--list <list-id>', 'Target list ID (defaults to configured inbox)')
+  .option('--due <date>', 'Due date for the card')
   .action(
     async (
-      listId: string,
       cardName: string,
       description: string | undefined,
-      options: { due?: string },
+      options: { list?: string; due?: string },
     ) => {
       try {
-        const result = await service.createCard(listId, cardName, description, options.due);
+        // Use provided list-id or fall back to default inbox
+        let targetListId = options.list;
+        if (!targetListId) {
+          const configResult = configService.getConfig();
+          if (!configResult.success) {
+            console.error(configResult.error.message);
+            process.exit(1);
+          }
+          targetListId = configResult.data.defaultInboxListId;
+          if (!targetListId) {
+            console.error(
+              'No --list provided and no default inbox configured. Run: trello config set-default-list <list-id>',
+            );
+            process.exit(1);
+          }
+        }
+        const result = await service.createCard(targetListId, cardName, description, options.due);
         if (!result.success) {
           console.error(result.error.message);
           process.exit(1);
