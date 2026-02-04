@@ -10,6 +10,8 @@ Load this file at session start and end.
 4. Quick-check (below)
 5. Begin
 
+**Command narration rule:** Before Claude runs any terminal command, Claude explains what the command will do and why it's being run.
+
 ## Quick-Check Protocol
 
 **When:** Every session start, before diving in.
@@ -43,7 +45,8 @@ Load this file at session start and end.
 4. Recap: "Here's what we covered. Which feel solid? Which are fuzzy?"
 5. Fuzzy → "Still Working Through"
 6. Solid → "Concepts Solidified"
-7. State next starting point
+7. Graduation pass: move any item that was *used correctly and explained* from "Still Working Through" → "Concepts Solidified"
+8. State next starting point
 
 ## Session Constraints
 

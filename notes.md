@@ -39,5 +39,9 @@ When a meaningful bug occurs, log:
 - Prevention (test, lint rule, type, invariant)
 
 ---
+## Parking Lot (Future Ideas)
+- (Add future ideas here without expanding current scope)
+
+---
 
 ## Phase 2 Progress
