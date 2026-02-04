@@ -12,6 +12,10 @@
 - Ternary for conditional values (`condition ? valueIfTrue : valueIfFalse`)
 - `param: string | undefined` vs `param?: string` — Commander always passes args, use former
 - `import type` vs `import` — use `import type` for types only used in annotations, regular `import` for runtime values (schemas)
+- When async is needed — I/O operations (disk, network) vs pure computation (string building)
+- `fs.promises` — async file operations (`readFile`, `writeFile`, `appendFile`, `mkdir`)
+- `path.dirname()` — extracts directory portion from a full file path
+- `fs.mkdir({ recursive: true })` — creates directory safely (no error if exists, creates parents)
 
 ## Still Working Through
 - Commander `.option()` — options come as object in last callback parameter, different from `.argument()`
@@ -27,9 +31,8 @@
 - Separation of concerns — API module throws structured errors, CLI formats for user
 - `?.` optional chaining — short-circuits to undefined when left side is null
 - `??` nullish coalescing — fallback for null/undefined, watch operator precedence
-- `Result<T>` pattern — returning `{ success: true, data }` or `{ success: false, error }` instead of throwing
-- `safeParse` vs `parse` — safeParse returns result object, parse throws on failure
-- Class constructor shorthand — `private param: type` in constructor declares + assigns property
+- `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax
+- TypeScript generics in general — `Array<T>`, `Promise<T>`, custom generics
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -45,3 +48,10 @@ When a meaningful bug occurs, log:
 ---
 
 ## Phase 2 Progress
+
+### Task 2.1: ObsidianService scaffold ✅
+- Created ObsidianService with vaultPath constructor
+- getDailyNotePath() — sync, returns path string like `/vault/Daily/2026-02-04.md`
+- appendToDaily() — creates Daily folder if needed, appends content
+- createNote() / readNote() — basic file operations with Result pattern
+- Learned: `fs.mkdir({ recursive: true })` ensures directory exists before write

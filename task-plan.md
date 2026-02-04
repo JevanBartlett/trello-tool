@@ -329,7 +329,7 @@ export class TrelloService {
 
 **Goal:** Write to your Obsidian vault programmatically.
 
-### Task 2.1: ObsidianService scaffold
+### ✅ Task 2.1: ObsidianService scaffold
 
 **Create `src/services/obsidian-service.ts`:**
 ```typescript
@@ -349,6 +349,8 @@ export class ObsidianService {
 - Creates the daily note if it doesn't exist
 
 **Time estimate:** 2 hours
+
+**Completed:** ObsidianService created with getDailyNotePath(), appendToDaily(), createNote(), readNote(). Uses fs.promises for async file I/O, path.dirname() + mkdir() to ensure Daily folder exists.
 
 ---
 
