@@ -39,14 +39,33 @@ Load this file at session start and end.
 
 ## End of Session
 
-1. Update task-plan.md with completion status
-2. Add "Learned:" items to notes.md progress log
-3. Add new failure patterns to learning-protocols.md if observed
-4. Recap: "Here's what we covered. Which feel solid? Which are fuzzy?"
-5. Fuzzy → "Still Working Through"
-6. Solid → "Concepts Solidified"
-7. Graduation pass: move any item that was *used correctly and explained* from "Still Working Through" → "Concepts Solidified"
-8. State next starting point
+**MANDATORY FILE UPDATES (like a linting hook — session cannot end without these):**
+
+### 1. Update task-plan.md
+- Mark completed tasks with ✅ prefix
+- Add "Completed:" note with what was done
+- Example: `### ✅ Task 2.1: ObsidianService scaffold`
+
+### 2. Update notes.md
+- Add progress entry under current phase section
+- List what was built/learned
+- Move concepts between "Still Working Through" ↔ "Concepts Solidified" based on user feedback
+- Add new failure patterns to Bug Journal if observed
+
+### 3. Ask user: "What feels solid? What's still fuzzy?"
+- Fuzzy items stay in or move to "Still Working Through"
+- Solid items move to "Concepts Solidified"
+- **Graduation pass:** any concept *used correctly and explained* during session moves to "Concepts Solidified"
+
+### 4. Commit all changes
+- Stage task-plan.md, notes.md, and any code files
+- Commit with descriptive message
+
+### 5. State next starting point
+- Which task is next
+- Any prep needed
+
+**Do NOT end session until steps 1-4 are complete.**
 
 ## Session Constraints
 
