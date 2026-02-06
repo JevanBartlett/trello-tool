@@ -33,6 +33,15 @@
 - `??` nullish coalescing — fallback for null/undefined, watch operator precedence
 - `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax
 - TypeScript generics in general — `Array<T>`, `Promise<T>`, custom generics
+- `toLocaleTimeString()` with options — need more practice with formatting options
+- ENOENT pattern — `(error as NodeJS.ErrnoException).code` for file system errors
+- Nested try/catch — inner catches specific error, re-throws others to outer handler
+- Variable shadowing — `let x` in inner block vs assigning to outer `x`
+- String insertion with indexOf/slice — finding position, splitting, sandwiching
+- `fs.readFile()` — read file contents as string, needs `'utf-8'` encoding
+- `fs.writeFile()` — write/overwrite file contents
+- `fs.appendFile()` — append to end of file (creates if doesn't exist)
+- `fs.mkdir()` — create directory, `{ recursive: true }` for nested paths
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -55,3 +64,16 @@ When a meaningful bug occurs, log:
 - appendToDaily() — creates Daily folder if needed, appends content
 - createNote() / readNote() — basic file operations with Result pattern
 - Learned: `fs.mkdir({ recursive: true })` ensures directory exists before write
+
+### Task 2.2: Daily note conventions ✅
+- Created `getDailyTemplate(date)` — returns markdown structure with Captured/Tasks Created/Notes sections
+- Created `formatTime()` — returns "2:47pm" format using `toLocaleTimeString()` with options
+- Rewrote `appendToDaily()` to handle file creation vs insertion:
+  - Uses nested try/catch: inner catches ENOENT (file not found), re-throws other errors
+  - If no file: create from template, insert entry after `## Captured\n`
+  - If file exists: read content, insert entry after `## Captured\n`
+  - Uses `indexOf()` to find marker, `slice()` to split and sandwich new content
+- Learned: `toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })`
+- Learned: `NodeJS.ErrnoException` type cast for accessing `.code` on fs errors
+- Learned: Variable shadowing — `let x` inside inner block creates new variable, doesn't assign to outer
+- Learned: String insertion pattern: `before.slice(0, point) + newStuff + before.slice(point)`

@@ -354,7 +354,7 @@ export class ObsidianService {
 
 ---
 
-### Task 2.2: Daily note conventions
+### ✅ Task 2.2: Daily note conventions
 
 Establish the format your daily notes will use:
 
@@ -377,6 +377,8 @@ Establish the format your daily notes will use:
 - Template creates proper structure for new daily notes
 
 **Time estimate:** 1 hour
+
+**Completed:** Created `getDailyTemplate()` for markdown structure, `formatTime()` for "2:47pm" format. Rewrote `appendToDaily()` to check if file exists (ENOENT pattern), create from template if not, insert timestamped entries after `## Captured\n`. Learned: nested try/catch for specific error handling, `indexOf()` + `slice()` for string insertion, variable shadowing pitfall.
 
 ---
 
