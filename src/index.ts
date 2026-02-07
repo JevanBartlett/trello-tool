@@ -4,22 +4,31 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import 'dotenv/config';
 import { ConfigService } from './services/config-service.js';
+import { ObsidianService } from './services/obsidian-service.js';
 import { TrelloService } from './services/trello-service.js';
 
 const program = new Command();
 const service = new TrelloService(process.env.TRELLO_API_KEY!, process.env.TRELLO_TOKEN!);
 const configService = new ConfigService();
+const vaultConfig = configService.getConfig();
+const vaultPath = vaultConfig.success ? vaultConfig.data.obsidian?.defaultVaultPath : undefined;
+const obsidianService = vaultPath ? new ObsidianService(vaultPath) : null;
 
 const config = program.command('config').description('Manage configuration');
 
-program.name('trello').description('CLI tool for interacting with Trello API').version('0.1.0');
+const cards = program
+  .command('trello')
+  .description('CLI tool for interacting with Trello API')
+  .version('0.1.0');
+
+const notes = program.command('notes').description('Manage Obsidian notes');
 
 config
   .command('set-default-board')
   .description('Set default board ID')
   .argument('<board-id>')
   .action((boardId: string) => {
-    const result = configService.setDefaultBoard(boardId);
+    const result = configService.setTrelloDefaultBoard(boardId);
     if (!result.success) {
       console.error(result.error.message);
       process.exit(1);
@@ -32,7 +41,7 @@ config
   .description('Set default list ID')
   .argument('<list-id>')
   .action((listID: string) => {
-    const result = configService.setDefaultInbox(listID);
+    const result = configService.setTrelloDefaultInbox(listID);
     if (!result.success) {
       console.error(result.error.message);
       process.exit(1);
@@ -50,11 +59,28 @@ config
       process.exit(1);
     }
     console.log(chalk.white('Current config:'));
-    console.log(chalk.blue('  Board ID:'), result.data.defaultBoardId ?? '(not set)');
-    console.log(chalk.blue('  Inbox List ID:'), result.data.defaultInboxListId ?? '(not set)');
+    console.log(chalk.blue('  Board ID:'), result.data.trello?.defaultBoardId ?? '(not set)');
+    console.log(
+      chalk.blue('  Inbox List ID:'),
+      result.data.trello?.defaultInboxListId ?? '(not set)',
+    );
+    console.log(chalk.blue('  VaultPath:'), result.data.obsidian?.defaultVaultPath ?? '{not set}');
   });
 
-program
+config
+  .command('set-vault-path')
+  .description('Set Obsidian vault path')
+  .argument('<path>')
+  .action((path: string) => {
+    const result = configService.setObsidianVaultPath(path);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green('Vault path set:'), path);
+  });
+
+cards
   .command('get-boards')
   .description('List all your Trello boards')
   .action(async () => {
@@ -83,7 +109,7 @@ program
     }
   });
 
-program
+cards
   .command('get-lists')
   .description('List all lists on a board')
   .argument('<board-id>')
@@ -121,7 +147,7 @@ program
     }
   });
 
-program
+cards
   .command('get-cards')
   .description('List all cards in a list')
   .argument('<list-id>')
@@ -164,7 +190,7 @@ program
     }
   });
 
-program
+cards
   .command('create-card')
   .description('Create a new card in a list (uses default inbox if no --list provided)')
   .argument('<name>')
@@ -186,7 +212,7 @@ program
             console.error(configResult.error.message);
             process.exit(1);
           }
-          targetListId = configResult.data.defaultInboxListId;
+          targetListId = configResult.data.trello?.defaultInboxListId;
           if (!targetListId) {
             console.error(
               'No --list provided and no default inbox configured. Run: trello config set-default-list <list-id>',
@@ -215,7 +241,7 @@ program
     },
   );
 
-program
+cards
   .command('move-card')
   .description('Move a card to a different list')
   .argument('<cardId>')
@@ -238,7 +264,7 @@ program
     }
   });
 
-program
+cards
   .command('archive-card')
   .description('Archive a card')
   .argument('<cardId>')
@@ -264,7 +290,7 @@ program
     }
   });
 
-program
+cards
   .command('set-due')
   .description('Set due date on a card')
   .argument('<cardId>')
@@ -291,7 +317,7 @@ program
     }
   });
 
-program
+cards
   .command('clear-due')
   .description('Clear due date from a card')
   .argument('<cardId>')
@@ -317,7 +343,7 @@ program
     }
   });
 
-program
+cards
   .command('set-desc')
   .description('Update description on a card')
   .argument('<cardId>')
@@ -344,7 +370,7 @@ program
     }
   });
 
-program
+cards
   .command('create-board')
   .description('Create a new board')
   .argument('<name>')
@@ -370,7 +396,7 @@ program
     }
   });
 
-program
+cards
   .command('create-list')
   .description('Create a new list on a board')
   .argument('<boardId>')
@@ -395,6 +421,66 @@ program
       }
       process.exit(1);
     }
+  });
+
+notes
+  .command('daily')
+  .description("Show today's daily note")
+  .action(async () => {
+    if (!obsidianService) {
+      console.error('Vault path not configured. Run: config set-vault-path <path>');
+      process.exit(1);
+    }
+    const path = obsidianService.getDailyNotePath();
+    const result = await obsidianService.readNote(path);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green(result.data));
+  });
+
+notes
+  .command('append')
+  .description('Append text to daily note')
+  .argument('<text>')
+  .action(async (text: string) => {
+    if (!obsidianService) {
+      console.error('Vault path not configured.  Run: config set-vault-path <path>');
+      process.exit(1);
+    }
+    const result = await obsidianService.appendToDaily(text);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green('Added to daily note'));
+  });
+
+notes
+  .command('create-note')
+  .description('create a new note')
+  .argument('<path>')
+  .argument('<content>')
+  .action(async (path: string, content: string) => {
+    if (!obsidianService) {
+      console.error('Vault path not configured.  Run: config set-vault-path <path>');
+      process.exit(1);
+    }
+    const result = await obsidianService.createNote(path, content);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.blue('Note Captured!'));
+  });
+
+notes
+  .command('search-note')
+  .description('Search notes (not yet implemented)')
+  .argument('<query>')
+  .action((query: string) => {
+    console.log(chalk.yellow('Search not implemented yet.  Query was:'), query);
   });
 
 program.parse();
