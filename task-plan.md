@@ -382,7 +382,7 @@ Establish the format your daily notes will use:
 
 ---
 
-### Task 2.3: Obsidian CLI commands
+### ✅ Task 2.3: Obsidian CLI commands
 
 - `ctx notes daily` — show today's daily note
 - `ctx notes append "some text"` — append to daily
@@ -392,6 +392,8 @@ Establish the format your daily notes will use:
 **Done when:** Can manage notes from command line
 
 **Time estimate:** 1.5 hours
+
+**Completed:** Added vault path to ConfigService with nested schema (trello/obsidian sections). Created notes subcommand group with daily, append, create-note, search-note commands. Learned: nested spread pattern for updating nested config, Commander subcommand groups, optional chaining for safe nested access.
 
 ---
 

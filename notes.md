@@ -77,3 +77,14 @@ When a meaningful bug occurs, log:
 - Learned: `NodeJS.ErrnoException` type cast for accessing `.code` on fs errors
 - Learned: Variable shadowing — `let x` inside inner block creates new variable, doesn't assign to outer
 - Learned: String insertion pattern: `before.slice(0, point) + newStuff + before.slice(point)`
+
+### Task 2.3: Obsidian CLI commands ✅
+- Refactored ConfigService to nested schema structure (trello/obsidian sections)
+- Added `setObsidianVaultPath()` with nested spread pattern
+- Created `notes` subcommand group in CLI with: daily, append, create-note, search-note
+- ObsidianService initialized conditionally based on config
+- Learned: **Nested spread pattern** — `{ ...outer, inner: { ...outer.inner, key: value } }` for immutable nested updates
+- Learned: **Commander subcommand groups** — `program.command('notes')` creates namespace, then chain `.command()` off that
+- Learned: **Optional chaining** — `config.data.obsidian?.defaultVaultPath` returns undefined if obsidian is missing
+- Learned: **Nullish coalescing** — `?? '(not set)'` for fallback when value is null/undefined
+- Learned: **YAGNI lesson** — spent too long debating config architecture for 3-4 keys. Start simple, refactor when it hurts
