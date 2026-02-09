@@ -42,6 +42,12 @@
 - `fs.writeFile()` — write/overwrite file contents
 - `fs.appendFile()` — append to end of file (creates if doesn't exist)
 - `fs.mkdir()` — create directory, `{ recursive: true }` for nested paths
+- `child_process.exec` + `promisify` — running shell commands from Node.js with async/await
+- Type guards — proving to TypeScript that a property exists before accessing it
+- Grep exit codes — 0 found, 1 not found, 2 error. Non-zero doesn't always mean failure.
+- Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing
+- Variable scoping in if blocks — `const` inside `if` isn't accessible outside it
+- `indexOf()` returns -1 when not found — not undefined, not 0
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -52,7 +58,7 @@ When a meaningful bug occurs, log:
 
 ---
 ## Parking Lot (Future Ideas)
-- (Add future ideas here without expanding current scope)
+- Google Calendar integration — descoped from Phase 3. OCR input unreliable, can't import behind firewall. Revisit if a better input method appears.
 
 ---
 
@@ -88,3 +94,31 @@ When a meaningful bug occurs, log:
 - Learned: **Optional chaining** — `config.data.obsidian?.defaultVaultPath` returns undefined if obsidian is missing
 - Learned: **Nullish coalescing** — `?? '(not set)'` for fallback when value is null/undefined
 - Learned: **YAGNI lesson** — spent too long debating config architecture for 3-4 keys. Start simple, refactor when it hurts
+
+### Session 2026-02-08
+**Built/Changed:**
+- `obsidian-service.ts` — Made `appendToDaily` resilient when `## Captured` marker missing
+- `obsidian-service.ts` — Implemented `searchNotes()` using grep + child_process
+- `trello.ts` — Added `dateStringSchema` (Zod refine + transform) for date validation
+- `trello-service.ts` — Applied date validation to `createCard` and `setDue` with `safeParse`
+- `index.ts` — Wired `search-note` CLI command with null guard and error handling
+- `task-plan.md` — Descoped Phase 3 (Google Calendar), updated CLAUDE.md pointer
+- `notes.md` — Moved Google Calendar to parking lot
+
+### Task 2.4: Search implementation ✅
+- Implemented `searchNotes()` using grep via `child_process` + `promisify`
+- Wired to CLI as `notes search-note <query>`
+- Handles grep exit codes: 0 = matches, 1 = no matches (not an error), 2 = real error
+- Learned: **`child_process.exec`** — run shell commands from Node.js
+- Learned: **`promisify`** — converts callback-style functions to Promise-style for async/await
+- Learned: **Type guards** — `if (error && typeof error === 'object' && 'code' in error)` proves to TypeScript that a property exists before accessing it
+- Learned: **grep exit codes** — 0 = found, 1 = not found (not an error), 2 = actual error
+
+### Hardening session
+- Added Zod `dateStringSchema` with `.refine()` + `.transform()` for date validation in `createCard` and `setDue`
+- Learned: **Zod `.refine()`** — custom validation, returns true/false
+- Learned: **Zod `.transform()`** — converts value after validation passes. Order matters: validate before transform
+- Learned: **Zod `.safeParse()`** — returns `{ success, data }` or `{ success, error }` without throwing
+- Made Obsidian `appendToDaily` resilient if `## Captured` marker is missing — appends marker + entry at end of file
+- Learned: **`indexOf()` returns -1** when substring not found (not undefined)
+- Descoped Phase 3 (Google Calendar) — moved to parking lot

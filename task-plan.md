@@ -28,6 +28,16 @@ Bot (3:12pm): ✓ note added to daily
 
 ---
 
+## Potential Updates (Short-Term Hardening)
+
+- Add CLI startup validation for `TRELLO_API_KEY`, `TRELLO_TOKEN`, and `TRELLO_BASE_URL` with friendly errors.
+- Guard empty-result formatting in `get-boards`, `get-lists`, and `get-cards` (avoid `Math.max()` on empty arrays).
+- ✓ Validate due-date inputs before `toISOString()`; surface helpful errors on invalid dates.
+- ✓ Make Obsidian daily append resilient if `## Captured` marker is missing (fallback to append or insert at end).
+- Add a minimal README with env vars and example commands.
+
+---
+
 ## Global Non-Negotiables
 
 ### Security
@@ -397,7 +407,7 @@ Establish the format your daily notes will use:
 
 ---
 
-### Task 2.4: Search implementation
+### ✅ Task 2.4: Search implementation
 
 - Use `grep` or `ripgrep` for fast search
 - Return file path + matching line + context
@@ -406,90 +416,13 @@ Establish the format your daily notes will use:
 
 **Time estimate:** 1 hour
 
----
-
-# Phase 3: Google Calendar Foundation
-
-**Goal:** Programmatic access to a calendar you control, syncable to Apple Calendar.
-
-### Task 3.1: Google Cloud setup
-
-- Create project in Google Cloud Console
-- Enable Google Calendar API
-- Configure OAuth consent screen
-- Create OAuth credentials (Desktop/Installed App)
-
-**Done when:** You have credentials JSON downloaded
-
-**Time estimate:** 30 minutes
+**Completed:** Implemented searchNotes() using grep via child_process. Handles no-matches (exit code 1) gracefully. Wired to CLI as `notes search-note`.
 
 ---
 
-### Task 3.2: OAuth flow implementation
+# ~~Phase 3: Google Calendar Foundation~~ (DESCOPED)
 
-**Create `src/auth/google.ts`:**
-- Authorization URL generation with `access_type=offline`
-- Local callback server (loopback redirect)
-- Exchange code → tokens
-- Save tokens to `~/.ctx/google-tokens.json` with `chmod 600`
-- Auto-refresh on expiry
-
-**Done when:** `ctx google login` completes OAuth flow end-to-end
-
-**Time estimate:** 2 hours
-
----
-
-### Task 3.3: GoogleCalendarService scaffold
-
-**Create `src/services/google-calendar-service.ts`:**
-```typescript
-export class GoogleCalendarService {
-  async getCalendars(): Promise<Calendar[]>
-  async getEvents(calendarId: string, timeMin: Date, timeMax: Date): Promise<Event[]>
-  async createEvent(calendarId: string, event: CreateEventParams): Promise<Event>
-  async deleteEvent(calendarId: string, eventId: string): Promise<void>
-}
-```
-
-**Done when:** Can create an event that appears in Google Calendar
-
-**Time estimate:** 2 hours
-
----
-
-### Task 3.4: Calendar CLI commands
-
-- `ctx calendar list` — show calendars
-- `ctx calendar events --from <date> --to <date>` — show events
-- `ctx calendar add "Title" --date <date> --time <time> --duration <minutes>`
-- `ctx calendar delete <event-id>`
-
-**Done when:** Can manage calendar from command line
-
-**Time estimate:** 1.5 hours
-
----
-
-### Task 3.5: Default calendar config
-
-- Store default calendar ID in `~/.ctx/config.json`
-- Commands work without specifying calendar ID
-
-**Done when:** `ctx calendar add "Meeting" --date tomorrow --time 2pm` uses default calendar
-
-**Time estimate:** 30 minutes
-
----
-
-### Task 3.6: Sync with Apple Calendar
-
-- Add Google account to Apple Calendar (manual, one-time)
-- Verify events created via CLI appear on iPhone/iPad
-
-**Done when:** Events sync to your Apple devices
-
-**Time estimate:** 15 minutes (just verification)
+**Moved to parking lot.** OCR input unreliable, can't import behind firewall. Revisit if a better input method appears.
 
 ---
 
@@ -581,7 +514,7 @@ Telegram message
   → Gateway receives
   → Claude parses
   → Router decides: task, note, or event?
-  → TrelloService.createCard() or ObsidianService.appendToDaily() or GoogleCalendarService.createEvent()
+  → TrelloService.createCard() or ObsidianService.appendToDaily()
   → Reply to Telegram with confirmation
 ```
 

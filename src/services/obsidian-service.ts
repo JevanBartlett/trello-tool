@@ -1,7 +1,10 @@
+import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import type { Result } from '../types/result.js';
 
+const execAsync = promisify(exec);
 // Returns the markdown template for a new daily note
 function getDailyTemplate(date: string): string {
   return `# ${date}
@@ -71,8 +74,14 @@ export class ObsidianService {
       } else {
         // File exists — insert entry after "## Captured\n"
         const marker = '## Captured\n';
-        const insertPoint = fileContent.indexOf(marker) + marker.length;
-        newContent = fileContent.slice(0, insertPoint) + entry + fileContent.slice(insertPoint);
+        const markerIndex = fileContent.indexOf(marker);
+
+        if (markerIndex === -1) {
+          newContent = fileContent + '\n' + marker + entry;
+        } else {
+          const insertPoint = markerIndex + marker.length;
+          newContent = fileContent.slice(0, insertPoint) + entry + fileContent.slice(insertPoint);
+        }
       }
 
       await fs.writeFile(notesPath, newContent);
@@ -128,7 +137,22 @@ export class ObsidianService {
     }
   }
 
-  searchNotes(_query: string): Promise<Result<void>> {
-    return Promise.resolve({ success: true, data: undefined });
+  async searchNotes(query: string): Promise<Result<string>> {
+    try {
+      const { stdout } = await execAsync(`grep -r "${query}" ${this.vaultPath}`);
+      return { success: true, data: stdout };
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        if (error.code === 1) {
+          // No matches found — not an error, just empty result
+          return { success: true, data: '' };
+        }
+      }
+
+      return {
+        success: false,
+        error: { code: 'SEARCH_ERROR', message: (error as Error).message },
+      };
+    }
   }
 }

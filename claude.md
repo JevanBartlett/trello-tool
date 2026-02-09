@@ -11,8 +11,8 @@ QA professional learning TypeScript. 17 years financial services. Primary caregi
 
 ## Current State
 
-- **Phase:** 1 (Trello Foundation) — Task 1.15 next (Extract TrelloService)
-- **Files:** `task-plan.md` (source of truth), `notes.md` (progress, concepts)
+- **Next task:** See `task-plan.md` — find first unchecked task
+- **Progress:** See `notes.md` — concepts learned, session logs
 
 ## Code Preferences
 

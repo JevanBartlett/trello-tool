@@ -477,10 +477,19 @@ notes
 
 notes
   .command('search-note')
-  .description('Search notes (not yet implemented)')
+  .description('Search notes for query')
   .argument('<query>')
-  .action((query: string) => {
-    console.log(chalk.yellow('Search not implemented yet.  Query was:'), query);
+  .action(async (query: string) => {
+    if (!obsidianService) {
+      console.error('Obsidian service not configured');
+      process.exit(1);
+    }
+    const result = await obsidianService.searchNotes(query);
+    if (!result.success) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.yellow(`${result.data}`));
   });
 
 program.parse();

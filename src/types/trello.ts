@@ -3,6 +3,11 @@
 
 import { z } from 'zod';
 
+export const dateStringSchema = z
+  .string()
+  .refine((val) => !Number.isNaN(new Date(val).getTime()), { message: 'Invalid date format' })
+  .transform((val) => new Date(val).toISOString());
+
 export const LabelSchema = z.object({
   id: z.string(),
   name: z.string(),

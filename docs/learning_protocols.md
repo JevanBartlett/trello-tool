@@ -81,6 +81,7 @@ After completing any non-trivial task:
 - When I'm repeating a failure pattern
 - Architecture and design decisions
 - When I skip "Errors Are Mine First"
+- **Debugging: Claude gives hypotheses and diagnostics, not the fixed code**
 
 ## Failure Patterns (Watch For These)
 

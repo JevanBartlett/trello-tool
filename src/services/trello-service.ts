@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Result } from '../types/result.js';
 import type { TrelloBoard, TrelloCard, TrelloList } from '../types/trello.js';
-import { BoardSchema, CardSchema, ListSchema } from '../types/trello.js';
+import { BoardSchema, CardSchema, ListSchema, dateStringSchema } from '../types/trello.js';
 
 export class TrelloService {
   constructor(
@@ -96,12 +96,25 @@ export class TrelloService {
     description?: string,
     due?: string,
   ): Promise<Result<TrelloCard>> {
+    let parsedDue: string | undefined;
+
+    if (due) {
+      const parsed = dateStringSchema.safeParse(due);
+
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: { code: 'INVALID_DATE', message: parsed.error.message },
+        };
+      }
+      parsedDue = parsed.data;
+    }
     const url = this.buildURL('cards');
     const body = {
       name: cardName,
       idList: listId,
       desc: description,
-      due: due ? new Date(due).toISOString() : undefined,
+      due: parsedDue,
     };
     return this.request(url, CardSchema, {
       method: 'POST',
@@ -141,7 +154,15 @@ export class TrelloService {
   }
 
   async setDue(cardId: string, dueDate: string): Promise<Result<TrelloCard>> {
-    const url = this.buildURL(`cards/${cardId}`, { due: new Date(dueDate).toISOString() });
+    const parsed = dateStringSchema.safeParse(dueDate);
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: { code: 'INVALID_DATE', message: parsed.error.message },
+      };
+    }
+    const url = this.buildURL(`cards/${cardId}`, { due: parsed.data });
     return this.request(url, CardSchema, { method: 'PUT' });
   }
 
