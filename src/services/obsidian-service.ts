@@ -1,10 +1,10 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import type { Result } from '../types/result.js';
 
-const execAsync = promisify(exec);
+const execAsync = promisify(execFile);
 // Returns the markdown template for a new daily note
 function getDailyTemplate(date: string): string {
   return `# ${date}
@@ -139,7 +139,7 @@ export class ObsidianService {
 
   async searchNotes(query: string): Promise<Result<string>> {
     try {
-      const { stdout } = await execAsync(`grep -r "${query}" ${this.vaultPath}`);
+      const { stdout } = await execAsync('grep', ['-r', query, this.vaultPath]);
       return { success: true, data: stdout };
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error) {

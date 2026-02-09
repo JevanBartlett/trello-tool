@@ -48,6 +48,7 @@
 - Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing
 - Variable scoping in if blocks — `const` inside `if` isn't accessible outside it
 - `indexOf()` returns -1 when not found — not undefined, not 0
+- `exec` vs `execFile` — exec uses shell (injection risk), execFile passes args as array (safe). Use execFile for user input.
 
 ## Bug Journal
 When a meaningful bug occurs, log:
