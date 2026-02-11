@@ -23,7 +23,7 @@ What's Next
 Start Task 4.2: Gateway scaffold — Express server that receives Telegram webhook POST, extracts message text, returns 200 OK.
 
 Blockers
-None
+None. Doc audit complete — all high/medium items resolved.
 
 Failed Approaches
 None

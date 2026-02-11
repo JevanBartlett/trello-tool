@@ -18,38 +18,46 @@
 - `fs.mkdir({ recursive: true })` — creates directory safely (no error if exists, creates parents)
 
 ## Still Working Through
-- Commander `.option()` — options come as object in last callback parameter, different from `.argument()`
-- `tsc` vs `tsx` — when to use which, what each actually does under the hood
-- Error re-throwing — why `throw error` in catch blocks, how errors propagate
-- TypeScript utility types — `Record<K, V>`, what others exist, when to use them
-- `Object.entries()` — what it returns, how to use it
-- Array destructuring in loops — `for (const [key, value] of ...)`
-- Custom error classes — `extends Error`, public constructor params, calling `super()`
-- Error handling architecture — where to throw (API layer) vs where to catch (CLI layer)
-- `instanceof` for type-checking — how it works with class hierarchies
-- `console.error()` vs `console.log()` — stderr vs stdout separation
-- Separation of concerns — API module throws structured errors, CLI formats for user
-- `?.` optional chaining — short-circuits to undefined when left side is null
-- `??` nullish coalescing — fallback for null/undefined, watch operator precedence
-- `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax
-- TypeScript generics in general — `Array<T>`, `Promise<T>`, custom generics
-- `toLocaleTimeString()` with options — need more practice with formatting options
-- ENOENT pattern — `(error as NodeJS.ErrnoException).code` for file system errors
-- Nested try/catch — inner catches specific error, re-throws others to outer handler
-- Variable shadowing — `let x` in inner block vs assigning to outer `x`
-- String insertion with indexOf/slice — finding position, splitting, sandwiching
-- `fs.readFile()` — read file contents as string, needs `'utf-8'` encoding
-- `fs.writeFile()` — write/overwrite file contents
-- `fs.appendFile()` — append to end of file (creates if doesn't exist)
-- `fs.mkdir()` — create directory, `{ recursive: true }` for nested paths
-- `child_process.exec` + `promisify` — running shell commands from Node.js with async/await
-- Type guards — proving to TypeScript that a property exists before accessing it
-- Grep exit codes — 0 found, 1 not found, 2 error. Non-zero doesn't always mean failure.
-- Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing
-- Variable scoping in if blocks — `const` inside `if` isn't accessible outside it
-- `indexOf()` returns -1 when not found — not undefined, not 0
-- `exec` vs `execFile` — exec uses shell (injection risk), execFile passes args as array (safe). Use execFile for user input.
-- Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility
+
+### TypeScript / Language
+- `?.` optional chaining — short-circuits to undefined when left side is null [added: P1]
+- `??` nullish coalescing — fallback for null/undefined, watch operator precedence [added: P1]
+- TypeScript utility types — `Record<K, V>`, what others exist, when to use them [added: P1]
+- `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax [added: P1]
+- TypeScript generics in general — `Array<T>`, `Promise<T>`, custom generics [added: P1]
+- `Object.entries()` — what it returns, how to use it [added: P1]
+- Array destructuring in loops — `for (const [key, value] of ...` [added: P1]
+- Variable shadowing — `let x` in inner block vs assigning to outer `x` [added: P2]
+- Variable scoping in if blocks — `const` inside `if` isn't accessible outside it [added: P2]
+- Type guards — proving to TypeScript that a property exists before accessing it [added: P2]
+
+### Error Handling
+- Error re-throwing — why `throw error` in catch blocks, how errors propagate [added: P1]
+- Custom error classes — `extends Error`, public constructor params, calling `super()` [added: P1]
+- Error handling architecture — where to throw (API layer) vs where to catch (CLI layer) [added: P1]
+- `instanceof` for type-checking — how it works with class hierarchies [added: P1]
+- ENOENT pattern — `(error as NodeJS.ErrnoException).code` for file system errors [added: P2]
+- Nested try/catch — inner catches specific error, re-throws others to outer handler [added: P2]
+
+### Node.js / Runtime
+- `tsc` vs `tsx` — when to use which, what each actually does under the hood [added: P1]
+- `console.error()` vs `console.log()` — stderr vs stdout separation [added: P1]
+- `fs.readFile()` — read file contents as string, needs `'utf-8'` encoding [added: P2]
+- `fs.writeFile()` — write/overwrite file contents [added: P2]
+- `fs.appendFile()` — append to end of file (creates if doesn't exist) [added: P2]
+- `fs.mkdir()` — create directory, `{ recursive: true }` for nested paths [added: P2]
+- `child_process.exec` + `promisify` — running shell commands from Node.js with async/await [added: P2]
+- `exec` vs `execFile` — exec uses shell (injection risk), execFile passes args as array (safe) [added: P2]
+- `toLocaleTimeString()` with options — need more practice with formatting options [added: P2]
+- String insertion with indexOf/slice — finding position, splitting, sandwiching [added: P2]
+- `indexOf()` returns -1 when not found — not undefined, not 0 [added: P2]
+- Grep exit codes — 0 found, 1 not found, 2 error. Non-zero doesn't always mean failure [added: P2]
+
+### Patterns / Architecture
+- Separation of concerns — API module throws structured errors, CLI formats for user [added: P1]
+- Commander `.option()` — options come as object in last callback parameter [added: P1]
+- Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing [added: P2]
+- Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility [added: P4]
 
 ## Bug Journal
 When a meaningful bug occurs, log:

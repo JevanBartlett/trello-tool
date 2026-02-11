@@ -41,9 +41,11 @@ Load this file at session start and end.
 
 **When:** End of every session, during the notes.md update (step 3).
 
-**Rule:** If a concept has been in "Still Working Through" for 3+ sessions AND was used correctly in code during those sessions, Claude flags it as a graduation candidate. Josh confirms or keeps it.
+**Rule:** If a concept has been in "Still Working Through" since 2+ phases ago AND was used correctly in code during those phases, Claude flags it as a graduation candidate. Josh confirms or keeps it.
 
-**Claude should say:** "These concepts have been sitting in 'Still Working Through' but you've been using them correctly in code: [list]. Ready to graduate any of them?"
+**Tracking:** Each concept is tagged `[added: P<N>]` indicating the phase it was added. Compare against current phase to identify stale items.
+
+**Claude should say:** "These concepts have been sitting in 'Still Working Through' since Phase N but you've been using them correctly in code: [list]. Ready to graduate any of them?"
 
 **Why this exists:** Items pile up. If you're using `?.` correctly every session, it doesn't belong on the "still learning" list — that's noise that hides what you actually need to practice.
 
