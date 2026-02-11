@@ -51,9 +51,9 @@ QA professional learning TypeScript. 17 years financial services. Primary caregi
 
 Load these on demand:
 
-- `@docs/learning-protocols.md` — Socratic method, error handling, reflection (load for coaching/learning work)
-- `@docs/session-protocols.md` — Start/end session checklists, quick-check (load at session boundaries)
-- `@docs/phase-review.md` — Exam mode, PR review, concept audit (load at phase completion only)
+- `@docs/learning_protocols.md` — Socratic method, error handling, reflection (load for coaching/learning work)
+- `@docs/session_protocols.md` — Start/end session checklists, quick-check (load at session boundaries)
+- `@docs/phase_review.md` — Exam mode, PR review, concept audit (load at phase completion only)
 
 ## Session Hygiene
 

@@ -57,7 +57,7 @@ This isn't "did it work"—it's "can you do it alone, and would it pass senior r
 
 1. Trello Foundation — TrelloService extracted, config working
 2. Obsidian Foundation — Write to vault from code
-3. Google Calendar — Create events, sync to Apple Calendar
+3. ~~Google Calendar~~ — DESCOPED (OCR unreliable, can't import behind firewall)
 4. The Bot — Working locally, Claude parsing
 5. Deploy — Live on Fly.io
 6. Polish — Calendar photo parsing, daily digest, reliable

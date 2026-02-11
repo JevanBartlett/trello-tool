@@ -41,7 +41,8 @@ Bot (3:12pm): ✓ note added to daily
 ## Global Non-Negotiables
 
 ### Security
-- Token files & configs stored under `~/.ctx/`
+- Local dev: secrets in `.env` (gitignored)
+- Deploy: secrets in `~/.ctx/` or platform secrets manager (e.g., `fly secrets set`)
 - All secrets files: `chmod 600`
 - No tokens in logs. Ever.
 - Default mode for "agent writes" is **append-only** unless explicitly enabled.
@@ -434,7 +435,7 @@ Establish the format your daily notes will use:
 
 - Message @BotFather on Telegram
 - Create new bot, get token
-- Store token in `~/.ctx/config.json`
+- Store token in `.env`
 - Test: send message, see it in bot API
 
 **Done when:** You can send a message to your bot and retrieve it via API
