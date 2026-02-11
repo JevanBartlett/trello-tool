@@ -1,2 +1,12 @@
 #!/usr/bin/env sh
+
+# Session protocol guard: if notes.md or task-plan.md is staged,
+# HANDOFF.md must be staged too (signals end-of-session was completed)
+if (git diff --cached --name-only | grep -qE '(notes\.md|task-plan\.md)') && \
+   ! (git diff --cached --name-only | grep -q 'HANDOFF\.md'); then
+  echo "⚠️  Session docs staged without HANDOFF.md — did you skip end-of-session?"
+  echo "   Stage HANDOFF.md or use --no-verify to bypass."
+  exit 1
+fi
+
 npx lint-staged
