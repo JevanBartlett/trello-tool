@@ -430,7 +430,7 @@ Establish the format your daily notes will use:
 
 **Goal:** Text anything, get it routed correctly.
 
-### Task 4.1: Telegram bot setup
+### ✅ Task 4.1: Telegram bot setup
 
 - Message @BotFather on Telegram
 - Create new bot, get token
@@ -440,6 +440,8 @@ Establish the format your daily notes will use:
 **Done when:** You can send a message to your bot and retrieve it via API
 
 **Time estimate:** 30 minutes
+
+**Completed:** Created @CtxCapture_bot via BotFather. Token stored in `.env` (revoked and replaced after accidental exposure). Added `telegram test` (getMe) and `telegram update-test` (getUpdates) CLI commands. Verified token works, sent "Hello world!" and retrieved it via API. Learned: Telegram API URL pattern (token in path), update types (my_chat_member vs message), getUpdates returns array.
 
 ---
 

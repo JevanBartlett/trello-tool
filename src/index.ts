@@ -492,4 +492,68 @@ notes
     console.log(chalk.yellow(`${result.data}`));
   });
 
+// --- Telegram types + test commands ---
+// Minimal types for Telegram Bot API responses.
+// Telegram wraps every response in { ok, result?, description? }.
+interface TelegramResponse<T> {
+  ok: boolean;
+  result: T;
+  description?: string;
+}
+
+interface TelegramBot {
+  id: number;
+  first_name: string;
+  username: string;
+}
+
+const telegram = program.command('telegram').description('Telegram bot commands');
+
+telegram
+  .command('test')
+  .description('Test Telegram bot token by calling getMe')
+  .action(async () => {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+      console.error('TELEGRAM_BOT_TOKEN not set in .env');
+      process.exit(1);
+    }
+
+    const url = `https://api.telegram.org/bot${token}/getMe`;
+    const response = await fetch(url);
+    const data = (await response.json()) as TelegramResponse<TelegramBot>;
+
+    if (!data.ok) {
+      console.error(chalk.red('Token invalid:'), data.description);
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Bot connected!'));
+    console.log(chalk.blue('  Name:'), data.result.first_name);
+    console.log(chalk.blue('  Username:'), `@${data.result.username}`);
+    console.log(chalk.blue('  Bot ID:'), data.result.id);
+  });
+
+telegram
+  .command('update-test')
+  .description('Test if getUpdates works')
+  .action(async () => {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+      console.error('TELEGRAM_BOT_TOKEN not set in .env');
+      process.exit(1);
+    }
+
+    const url = `https://api.telegram.org/bot${token}/getUpdates`;
+    const response = await fetch(url);
+    const data = (await response.json()) as TelegramResponse<unknown[]>;
+
+    if (!data.ok) {
+      console.error(chalk.red('Token invalid:'), data.description);
+      process.exit(1);
+    }
+
+    console.log(chalk.blue(JSON.stringify(data.result, null, 2)));
+  });
+
 program.parse();

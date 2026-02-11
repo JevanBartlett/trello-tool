@@ -49,6 +49,7 @@
 - Variable scoping in if blocks — `const` inside `if` isn't accessible outside it
 - `indexOf()` returns -1 when not found — not undefined, not 0
 - `exec` vs `execFile` — exec uses shell (injection risk), execFile passes args as array (safe). Use execFile for user input.
+- Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -114,6 +115,22 @@ When a meaningful bug occurs, log:
 - Learned: **`promisify`** — converts callback-style functions to Promise-style for async/await
 - Learned: **Type guards** — `if (error && typeof error === 'object' && 'code' in error)` proves to TypeScript that a property exists before accessing it
 - Learned: **grep exit codes** — 0 = found, 1 = not found (not an error), 2 = actual error
+
+## Phase 4 Progress
+
+### Task 4.1: Telegram bot setup ✅
+- Created @CtxCapture_bot via BotFather
+- Token stored in `.env`, loaded via `dotenv/config` (same as Trello creds)
+- Added `telegram test` CLI command — hits `/getMe`, prints bot name/username/ID
+- Added `telegram update-test` CLI command — hits `/getUpdates`, dumps raw JSON
+- Sent "Hello world!" from Telegram, retrieved via `getUpdates` — saw `message.text` in response
+- Learned: **Telegram API URL pattern** — `https://api.telegram.org/bot<token>/<method>` (token in URL path, unlike Trello's query params)
+- Learned: **`getUpdates` returns an array** — each element is an update with different types (`my_chat_member`, `message`, etc.)
+- Learned: **Bot vs service architecture** — Trello/Obsidian are destination services (push data to them), Telegram is the entry point/gateway (data comes from it). Different role = different architecture.
+- Learned: **Token security hygiene** — revoke compromised tokens immediately, never paste in chat, store in `.env` with `.gitignore`
+- Learned: **`JSON.stringify(data, null, 2)`** — pretty-print JSON for debugging (null = no replacer, 2 = indent spaces)
+
+**Quick-check candidates for next session:** `?.` optional chaining, `??` nullish coalescing, `console.error()` vs `console.log()`
 
 ### Hardening session
 - Added Zod `dateStringSchema` with `.refine()` + `.transform()` for date validation in `createCard` and `setDue`

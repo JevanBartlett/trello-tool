@@ -11,6 +11,7 @@ QA professional learning TypeScript. 17 years financial services. Primary caregi
 
 ## Current State
 
+- **Start here:** Read `HANDOFF.md` first — hot session state
 - **Next task:** See `task-plan.md` — find first unchecked task
 - **Progress:** See `notes.md` — concepts learned, session logs
 
@@ -53,6 +54,11 @@ Load these on demand:
 - `@docs/learning-protocols.md` — Socratic method, error handling, reflection (load for coaching/learning work)
 - `@docs/session-protocols.md` — Start/end session checklists, quick-check (load at session boundaries)
 - `@docs/phase-review.md` — Exam mode, PR review, concept audit (load at phase completion only)
+
+## Session Hygiene
+
+- At end of session: update HANDOFF.md with current state (mandatory — see session_protocols.md)
+- At end of session: flag any "Still Working Through" items that have been used correctly in code for 3+ sessions as graduation candidates
 
 ## Terminal Commands
 

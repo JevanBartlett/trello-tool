@@ -4,7 +4,7 @@ Load this file at session start and end.
 
 ## Start of Session
 
-1. Claude reads CLAUDE.md + notes.md + task-plan.md
+1. Claude reads HANDOFF.md first, then CLAUDE.md + notes.md + task-plan.md
 2. State where we left off
 3. Confirm operating mode
 4. Quick-check (below)
@@ -37,6 +37,16 @@ Load this file at session start and end.
 - Reciting syntax without explaining purpose
 - Confusing it with something else
 
+## Stale Concept Graduation
+
+**When:** End of every session, during the notes.md update (step 3).
+
+**Rule:** If a concept has been in "Still Working Through" for 3+ sessions AND was used correctly in code during those sessions, Claude flags it as a graduation candidate. Josh confirms or keeps it.
+
+**Claude should say:** "These concepts have been sitting in 'Still Working Through' but you've been using them correctly in code: [list]. Ready to graduate any of them?"
+
+**Why this exists:** Items pile up. If you're using `?.` correctly every session, it doesn't belong on the "still learning" list — that's noise that hides what you actually need to practice.
+
 ## End of Session
 
 **MANDATORY FILE UPDATES (like a linting hook — session cannot end without these):**
@@ -61,11 +71,16 @@ Load this file at session start and end.
 - Stage task-plan.md, notes.md, and any code files
 - Commit with descriptive message
 
-### 5. State next starting point
+### 5. Update HANDOFF.md
+- Fill in every field with current state
+- If a field is empty (no blockers, no failed approaches), write "None"
+- This is the first thing the next session reads — make it count
+
+### 6. State next starting point
 - Which task is next
 - Any prep needed
 
-**Do NOT end session until steps 1-4 are complete.**
+**Do NOT end session until steps 1-5 are complete.**
 
 ## Session Constraints
 
