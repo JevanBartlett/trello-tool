@@ -49,6 +49,20 @@ Load this file at session start and end.
 
 **Why this exists:** Items pile up. If you're using `?.` correctly every session, it doesn't belong on the "still learning" list — that's noise that hides what you actually need to practice.
 
+## Per-Task Done Gate
+
+**After completing each task (not just each session):**
+
+1. Run the code / verify it works
+2. Done checks from task contract: all pass?
+3. notes.md: what was learned? (even one line)
+4. task-plan.md: mark complete with "Completed:" note
+5. If last task of session → continue to End of Session checklist below
+
+**Claude: Do not start the next task until steps 1-4 are confirmed.**
+
+---
+
 ## End of Session
 
 **MANDATORY FILE UPDATES (like a linting hook — session cannot end without these):**

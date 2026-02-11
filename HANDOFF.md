@@ -28,6 +28,9 @@ None. Doc audit complete — all high/medium items resolved.
 Failed Approaches
 None
 
+This Week's Pattern
+None yet — track one repeated process skip or mistake per week, then add a guardrail to prevent it.
+
 Last Session
 
 Date: 2026-02-10

@@ -46,6 +46,12 @@ QA professional learning TypeScript. 17 years financial services. Primary caregi
 - Commit after each completed task
 - Stuck 30+ minutes = ask for help
 - Ugly working code beats beautiful imaginary code
+- **Task contract (mandatory before starting any task):**
+  - Goal: what we're building
+  - Constraints: time box, no new dependencies, etc.
+  - Done checks: specific, testable conditions
+  - Mode: Teach / Coach / Exam / Delegate
+  - Claude states these. Josh confirms. Then begin.
 
 ## Reference Docs
 
@@ -63,3 +69,7 @@ Load these on demand:
 ## Terminal Commands
 
 Walk me through commands instead of just running them. Explain before executing.
+
+## Checkpoint Gate
+
+Before writing or editing code: state the plan (what files, what changes, why). Wait for confirm. Then execute. No silent edits.
