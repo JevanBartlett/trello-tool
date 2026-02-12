@@ -16,11 +16,11 @@
 - `fs.promises` — async file operations (`readFile`, `writeFile`, `appendFile`, `mkdir`)
 - `path.dirname()` — extracts directory portion from a full file path
 - `fs.mkdir({ recursive: true })` — creates directory safely (no error if exists, creates parents)
+- `?.` optional chaining — short-circuits to undefined when left side is null/undefined. Placement matters: `obj.prop?.nested` guards `prop`, not `obj`
 
 ## Still Working Through
 
 ### TypeScript / Language
-- `?.` optional chaining — short-circuits to undefined when left side is null [added: P1]
 - `??` nullish coalescing — fallback for null/undefined, watch operator precedence [added: P1]
 - TypeScript utility types — `Record<K, V>`, what others exist, when to use them [added: P1]
 - `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax [added: P1]
@@ -53,11 +53,27 @@
 - `indexOf()` returns -1 when not found — not undefined, not 0 [added: P2]
 - Grep exit codes — 0 found, 1 not found, 2 error. Non-zero doesn't always mean failure [added: P2]
 
+### Express / HTTP Server
+- `express()` — creates app instance, `app.use()` adds middleware, `app.post()` adds route handler, `app.listen()` starts server [added: P4]
+- Middleware concept — `express.json()` parses incoming JSON bodies; function call `()` required because it returns the middleware [added: P4]
+- Route handlers — `(req: Request, res: Response) => {}`, req has incoming data, res sends response back [added: P4]
+- `res.sendStatus(200)` — sends bare status code response with no body [added: P4]
+- Ports — apartment numbers on your machine (0–65535), 3000 is convention for local dev [added: P4]
+
+### Webhooks / Networking
+- Webhook vs polling — polling = you ask for updates, webhook = service pushes to your URL [added: P4]
+- ngrok — creates temporary public URL tunneling to localhost for webhook testing [added: P4]
+- Telegram `setWebhook` — tells Telegram where to POST new messages [added: P4]
+
 ### Patterns / Architecture
 - Separation of concerns — API module throws structured errors, CLI formats for user [added: P1]
 - Commander `.option()` — options come as object in last callback parameter [added: P1]
 - Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing [added: P2]
 - Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility [added: P4]
+
+### Import / Module System
+- Function reference vs function call — `express.json` passes the function, `express.json()` calls it and passes the return value [added: P4]
+- CJS interop with `verbatimModuleSyntax` — CommonJS packages need special import syntax depending on tsconfig [added: P4]
 
 ## Bug Journal
 When a meaningful bug occurs, log:
@@ -138,7 +154,7 @@ When a meaningful bug occurs, log:
 - Learned: **Token security hygiene** — revoke compromised tokens immediately, never paste in chat, store in `.env` with `.gitignore`
 - Learned: **`JSON.stringify(data, null, 2)`** — pretty-print JSON for debugging (null = no replacer, 2 = indent spaces)
 
-**Quick-check candidates for next session:** `?.` optional chaining, `??` nullish coalescing, `console.error()` vs `console.log()`
+**Quick-check candidates for next session:** `??` nullish coalescing, `console.error()` vs `console.log()`
 
 ### Hardening session
 - Added Zod `dateStringSchema` with `.refine()` + `.transform()` for date validation in `createCard` and `setDue`
@@ -148,3 +164,14 @@ When a meaningful bug occurs, log:
 - Made Obsidian `appendToDaily` resilient if `## Captured` marker is missing — appends marker + entry at end of file
 - Learned: **`indexOf()` returns -1** when substring not found (not undefined)
 - Descoped Phase 3 (Google Calendar) — moved to parking lot
+
+### Session 2026-02-11
+**Built/Changed:**
+- `src/gateway/server.ts` — NEW. Express server with POST `/webhook` route. Receives Telegram updates, extracts message text, logs with timestamp, returns 200 OK.
+- Installed `express` + `@types/express`
+- Installed ngrok for local webhook testing
+- Registered Telegram webhook via `setWebhook` API call
+
+**Quick-check:** `?.` optional chaining — passed, graduated to Concepts Solidified. Correctly explained placement (`update.message?.text` guards `message`, not `update`).
+
+**Quick-check candidates for next session:** `??` nullish coalescing, `console.error()` vs `console.log()`, Express route handlers

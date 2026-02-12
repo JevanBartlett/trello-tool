@@ -446,7 +446,7 @@ Establish the format your daily notes will use:
 
 ---
 
-### Task 4.2: Gateway scaffold
+### ✅ Task 4.2: Gateway scaffold
 
 **Create `src/gateway/server.ts`:**
 ```typescript
@@ -463,6 +463,8 @@ Establish the format your daily notes will use:
 - Messages logged to console
 
 **Time estimate:** 2 hours
+
+**Completed:** Created Express server in `src/gateway/server.ts`. POST `/webhook` route receives Telegram updates, extracts `message.text`, logs with timestamp, returns 200 OK. Tested locally with curl, then connected via ngrok + Telegram `setWebhook`. Sent messages from Telegram app, verified they appear in server console. Installed express + @types/express.
 
 ---
 

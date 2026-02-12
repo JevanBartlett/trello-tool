@@ -5,25 +5,28 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4 / Task 4.2: Gateway scaffold
+Phase / Task: Phase 4 / Task 4.3: Claude integration for parsing
 Status: not started
 
 Progress
-Task 4.1 complete. @CtxCapture_bot created, token verified, can send and receive messages via API. Two test CLI commands added (telegram test, telegram update-test).
+Task 4.2 complete. Express gateway server receives Telegram webhook POSTs, extracts message text, logs to console, returns 200 OK. Tested locally with curl and live via ngrok + Telegram.
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
 - Telegram is the gateway/entry point, not a service like Trello/Obsidian — different architectural role
+- Express for HTTP server (POST `/webhook` route)
+- ngrok for local webhook testing (temporary public URL tunneling to localhost)
 
 Files in Play
-- `src/index.ts` — telegram test/update-test commands added (lines 495-545). These are throwaway test commands, will be replaced by gateway.
+- `src/gateway/server.ts` — Express server with POST `/webhook` route. Receives Telegram updates, extracts message text, logs with timestamp, returns 200 OK.
+- `src/index.ts` — telegram test/update-test commands (throwaway, will be replaced)
 - `.env` — TELEGRAM_BOT_TOKEN added
 
 What's Next
-Start Task 4.2: Gateway scaffold — Express server that receives Telegram webhook POST, extracts message text, returns 200 OK.
+Start Task 4.3: Claude integration for parsing — create `src/gateway/parser.ts` with `parseMessage()` function that uses Claude API to classify messages as task/note/event and extract structured data.
 
 Blockers
-None. Doc audit complete — all high/medium items resolved.
+None.
 
 Failed Approaches
 None
@@ -33,9 +36,9 @@ None yet — track one repeated process skip or mistake per week, then add a gua
 
 Last Session
 
-Date: 2026-02-10
+Date: 2026-02-11
 Duration: ~45 min
-Mode: Coach (with Teach for BotFather/security concepts)
+Mode: Teach (Express, webhooks, ngrok all new)
 Kill? clean
 
 Agent Reading Protocol
