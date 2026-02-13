@@ -556,4 +556,21 @@ telegram
     console.log(chalk.blue(JSON.stringify(data.result, null, 2)));
   });
 
+// --- Parser test command (throwaway) ---
+const parser = program.command('parser').description('Parser test commands');
+
+parser
+  .command('test')
+  .description('Test Claude message parsing')
+  .argument('<message>')
+  .action(async (message: string) => {
+    const { parseMessage } = await import('./gateway/parser.js');
+    const result = await parseMessage(message);
+    if (!result.success) {
+      console.error(chalk.red('Parse failed:'), result.error.code, result.error.message);
+      process.exit(1);
+    }
+    console.log(chalk.green('Parsed:'), JSON.stringify(result.data, null, 2));
+  });
+
 program.parse();

@@ -85,6 +85,8 @@ When a meaningful bug occurs, log:
 ---
 ## Parking Lot (Future Ideas)
 - Google Calendar integration — descoped from Phase 3. OCR input unreliable, can't import behind firewall. Revisit if a better input method appears.
+- Telegram bot reads tasks from a board — "what are my tasks for today?" (related: Task 6.2 `/tasks` command)
+- Daily task summary with time context — surface due-today items automatically (related: Task 6.3 daily digest)
 
 ---
 
