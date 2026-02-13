@@ -65,11 +65,21 @@
 - ngrok — creates temporary public URL tunneling to localhost for webhook testing [added: P4]
 - Telegram `setWebhook` — tells Telegram where to POST new messages [added: P4]
 
+### LLM / Claude API
+- Anthropic SDK — `new Anthropic()` creates client, `client.messages.create()` sends requests. Response has `content[0].text` (string) and `usage` (token counts) [added: P4]
+- System prompts — instructions Claude sees before every message. Controls behavior (parser role, output format, examples) [added: P4]
+- `max_tokens` — caps Claude's **response** length, not input. 256 tokens ≈ 200 words of output [added: P4]
+- Model selection for cost — Haiku for simple classification, Sonnet/Opus for complex reasoning. Start cheap, scale up [added: P4]
+- LLM output cleaning — models may wrap JSON in markdown code blocks. Strip before `JSON.parse()`. Belt and suspenders: prompt says "no code blocks" AND code strips them [added: P4]
+- `z.enum()` — restricts a string to specific allowed values. `z.enum(['task', 'note', 'unknown'])` rejects anything else [added: P4]
+
 ### Patterns / Architecture
 - Separation of concerns — API module throws structured errors, CLI formats for user [added: P1]
 - Commander `.option()` — options come as object in last callback parameter [added: P1]
 - Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing [added: P2]
 - Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility [added: P4]
+- Result pattern flow — try something risky → fail early with error → keep going → return success at the end. Each step is a gate [added: P4]
+- `.nullable()` vs `.optional()` in Zod — `.optional()` allows undefined (field missing), `.nullable()` allows null (field present but null). LLMs often return null instead of omitting [added: P4]
 
 ### Import / Module System
 - Function reference vs function call — `express.json` passes the function, `express.json()` calls it and passes the return value [added: P4]
@@ -177,3 +187,17 @@ When a meaningful bug occurs, log:
 **Quick-check:** `?.` optional chaining — passed, graduated to Concepts Solidified. Correctly explained placement (`update.message?.text` guards `message`, not `update`).
 
 **Quick-check candidates for next session:** `??` nullish coalescing, `console.error()` vs `console.log()`, Express route handlers
+
+### Session 2026-02-12
+**Built/Changed:**
+- `src/gateway/parser.ts` — NEW. `parseMessage()` function calls Claude Haiku to classify text as task/note/unknown, extracts content and due dates. Zod validates response. `stripCodeBlock()` helper cleans markdown fences from LLM output.
+- `src/index.ts` — Added `parser test` throwaway CLI command for testing
+- Installed `@anthropic-ai/sdk`
+- Added `ANTHROPIC_API_KEY` to `.env`
+- Updated parking lot with board reading and daily summary ideas
+
+**Bugs hit:**
+1. Claude wrapped JSON in markdown code blocks → `JSON.parse()` failed. Fixed with `stripCodeBlock()`.
+2. Claude returned `"dueDate": null` → Zod `.optional()` only allows undefined, not null. Fixed by adding `.nullable()`.
+
+**Quick-check candidates for next session:** `z.enum()`, `slice()` with negative indices, `let` outside try / assign inside try scoping pattern, Result pattern flow
