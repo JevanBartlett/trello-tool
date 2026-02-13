@@ -468,7 +468,7 @@ Establish the format your daily notes will use:
 
 ---
 
-### Task 4.3: Claude integration for parsing
+### ✅ Task 4.3: Claude integration for parsing
 
 **Create `src/gateway/parser.ts`:**
 ```typescript
@@ -509,6 +509,8 @@ Be concise. When ambiguous, default to note.
 - Token usage logged
 
 **Time estimate:** 2 hours
+
+**Completed:** Created `src/gateway/parser.ts` with `parseMessage()` function. Uses Anthropic SDK with Claude 3.5 Haiku for intent classification. Zod schema validates Claude's JSON response into `ParsedMessage` type (task/note/event/unknown). System prompt with few-shot examples handles informal input. Token usage logged per call. Tested via CLI `telegram parse` command with various inputs.
 
 ---
 
