@@ -1,9 +1,33 @@
+import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 
 interface TelegramUpdate {
   message?: {
     text?: string;
+    chat: {
+      id: number;
+    };
   };
+}
+
+// TODO: remove underscore when handleMessage is wired up (Task 4.4 step 4)
+async function _sendReply(chatId: number, text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error('TELEGRAM_BOT_TOKEN not set');
+    return;
+  }
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+
+  if (!response.ok) {
+    console.error(`Telegram reply failed: ${response.status}`);
+  }
 }
 
 const app = express();

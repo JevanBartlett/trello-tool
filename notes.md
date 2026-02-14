@@ -201,3 +201,18 @@ When a meaningful bug occurs, log:
 2. Claude returned `"dueDate": null` → Zod `.optional()` only allows undefined, not null. Fixed by adding `.nullable()`.
 
 **Quick-check candidates for next session:** `z.enum()`, `slice()` with negative indices, `let` outside try / assign inside try scoping pattern, Result pattern flow
+
+### Session 2026-02-13
+**Built/Changed:**
+- `src/gateway/server.ts` — Expanded `TelegramUpdate` interface with `chat.id: number`. Added `sendReply()` function: plain `fetch` POST to Telegram `sendMessage` API, logs failures, returns `void`.
+- Task 4.4 in progress — steps 1-2 of 5 complete (interface + sendReply). Steps 3-5 remain (handleMessage, wire webhook, initialize services).
+
+**Learned:**
+- **When to skip Zod** — if you're not going to *use* the response data, don't validate it. Zod is for untrusted data you read from, not fire-and-forget calls.
+- **camelCase vs snake_case mapping** — TypeScript variables use camelCase (`chatId`), but JSON keys sent to external APIs must match their spec (`chat_id` for Telegram).
+- **Fire-and-forget pattern** — when a failure can't be recovered from (reply failed, can't reply to say reply failed), log it and move on. `console.error` + `return`, not `Result<T>`.
+- **Data flow direction matters** — `sendReply` sends *to* Telegram, doesn't consume the response. Different from Trello calls where you use the returned card data.
+
+**Quick-check:** Result pattern flow — partial. Described internal gates of a single Result-returning function correctly. Missed the chaining pattern (check first result, bail if bad, proceed to next call). Stays in "Still Working Through."
+
+**Quick-check candidates for next session:** Result pattern chaining (hands-on in handleMessage), `z.enum()`, Express async route handlers
