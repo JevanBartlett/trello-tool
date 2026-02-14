@@ -514,10 +514,10 @@ Be concise. When ambiguous, default to note.
 
 ---
 
-### Task 4.4: Wire it together
+### ✅ Task 4.4: Wire it together
 
 ```
-Telegram message 
+Telegram message
   → Gateway receives
   → Claude parses
   → Router decides: task, note, or event?
@@ -531,6 +531,36 @@ Telegram message
 - Bot replies "✓ task: follow up with Nancy about UAT — due Thursday"
 
 **Time estimate:** 2 hours
+
+**Completed:** Wired full end-to-end flow in `server.ts`. Added `handleMessage()` with Result-based routing: parse → switch on type → call TrelloService or ObsidianService → reply via Telegram. Fixed import order bug (dotenv must load before parser to populate `ANTHROPIC_API_KEY`). Fixed TypeScript narrowing issues: `trellodefaultlist!` (module-level guard doesn't carry into functions) and `safeData.dueDate ?? undefined` (nullish coalescing to bridge `null | undefined` → `undefined`). Live test confirmed: Telegram → Claude parse → Trello card created → bot reply. Known issue: due date format ("thursday") not accepted by Trello API — tracked in Task 4.4a-7.
+
+---
+
+### Task 4.4a: Hardening pass
+
+Address security, correctness, and robustness findings before wiring error handling.
+
+#### Subtasks
+
+- [ ] **4.4a-1: Webhook authentication** — verify Telegram secret token header on `/webhook`; reject unauthenticated requests
+- [ ] **4.4a-2: Obsidian path traversal guard** — restrict read/write paths to vault-relative only; reject absolute paths and `..` traversal
+- [ ] **4.4a-3: Timezone fix** — daily note date uses local time, not UTC `toISOString()`; entries and filename use same timezone
+- [ ] **4.4a-4: Startup config validation** — fail fast with clear messages for missing `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BASE_URL`, `ANTHROPIC_API_KEY`
+- [ ] **4.4a-5: `request()` non-JSON handling** — wrap `response.json()` in try/catch to maintain `Result<T>` contract on HTML/error responses
+- [ ] **4.4a-6: Config read error handling** — catch `readFileSync` failures within `Result` flow
+- [ ] **4.4a-7: Due-date contract consistency** — align parser output format with what TrelloService actually accepts (parseable date strings, not "thursday")
+- [ ] **4.4a-8: Zod schema fixes** — `LabelSchema.color` should be `.nullable()` (Trello returns `null` for colorless labels); audit other schemas for similar gaps
+
+**Done when:**
+- Unauthenticated webhook requests are rejected
+- Obsidian paths can't escape the vault
+- Daily notes use correct local date near midnight
+- Missing env vars fail at startup with actionable error messages
+- Non-JSON API responses don't throw unhandled exceptions
+- Parser due-date output matches Trello's expected input format
+- All Zod schemas handle nullable fields Trello actually returns
+
+**Time estimate:** 3-4 hours
 
 ---
 
@@ -637,6 +667,26 @@ fly deploy
 
 ---
 
+### Task 5.7: Automated tests
+
+Add test coverage for the core paths: API integrations, file I/O, and parser logic.
+
+- Set up vitest (or jest) with a `test` script in `package.json`
+- Unit tests for `parseMessage()` — task/note/unknown classification, due-date extraction
+- Unit tests for `request()` — success, non-JSON, network failure
+- Unit tests for `ObsidianService` — daily note creation, append, path traversal rejection
+- Integration test for `TrelloService` — mock HTTP, verify Zod validation on real-shaped responses
+- CI: add `npm test` to pre-commit or check script
+
+**Done when:**
+- `npm test` runs and passes
+- Core parsing, request, and service logic has coverage
+- Tests catch regressions in Zod schemas and Result handling
+
+**Time estimate:** 3-4 hours
+
+---
+
 # Phase 6: Polish + Reliability
 
 ### Task 6.1: Vault sync (git-based)
@@ -694,61 +744,100 @@ Should create 4 separate items.
 
 ---
 
-### Task 6.5: Calendar photo parsing
+### ~~Task 6.5: Calendar photo parsing~~ (DESCOPED)
 
-**The killer feature for your weekly calendar sync.**
-
-- Telegram bot accepts image messages
-- Claude Vision extracts calendar events from photo
-- GoogleCalendarService creates events in bulk
-- Reply with summary: "✓ Created 14 events for Feb 3-7"
-
-**The prompt:**
-```
-Extract calendar events from this image of a work calendar.
-
-Return as JSON array:
-[
-  { "title": "UAT Sync", "date": "2025-02-03", "start": "14:00", "end": "14:30" },
-  { "title": "1:1 with Nancy", "date": "2025-02-04", "start": "10:00", "end": "10:30" }
-]
-
-Rules:
-- Use 24-hour time format
-- If end time unclear, assume 30 minutes
-- If you can't read something clearly, mark it: { "title": "UNCLEAR - something sync?", ... }
-- Include all visible events for the week
-```
-
-**Workflow:**
-```
-Sunday evening:
-1. Take photo of work calendar on iPad
-2. Send to Telegram bot
-3. Bot replies: "Found 14 events. Creating..."
-4. Bot replies: "✓ Created 14 events for Feb 3-7"
-5. Events sync to Apple Calendar automatically
-```
-
-**Done when:**
-- Photo of calendar → events in Google Calendar
-- Unclear items flagged for manual review
-- Apple Calendar shows synced events
-
-**Time estimate:** 3-4 hours
+**Moved to parking lot.** Google Calendar was descoped (Phase 3). Revisit if calendar integration is added later.
 
 ---
 
-### Task 6.6: Calendar conflict detection
+### ~~Task 6.6: Calendar conflict detection~~ (DESCOPED)
 
-When parsing calendar photo:
-- Check for existing events at same time
-- Warn: "⚠️ Conflict: 'UAT Sync' overlaps with existing 'Team Standup'"
-- Ask for confirmation or skip
+**Moved to parking lot.** Depends on calendar integration.
 
-**Done when:** Duplicates don't pile up week over week
+---
 
-**Time estimate:** 1 hour
+# Phase 7: Extract the Learning System
+
+**Goal:** The learning system itself becomes a portable, enforceable product — not just markdown suggestions, but infrastructure that works on the next project.
+
+### Task 7.1: Migrate to `.claude/rules/`
+
+- Move `docs/learning_protocols.md` → `.claude/rules/learning.md`
+- Move `docs/session_protocols.md` → `.claude/rules/session.md`
+- Move `docs/phase_review.md` → `.claude/rules/phase-review.md`
+- Add YAML frontmatter for path-specific activation where appropriate
+- Update CLAUDE.md references from `@docs/` to `.claude/rules/`
+- Prune CLAUDE.md — remove anything Claude already does correctly without being told
+
+**Done when:**
+- Rules load from `.claude/rules/` instead of `@docs/`
+- CLAUDE.md is a tight reference card, not documentation
+- All existing learning protocols still function
+
+**Time estimate:** 1-2 hours
+
+---
+
+### Task 7.2: Create `.claude/settings.json`
+
+- Add JSON schema header for VS Code autocomplete
+- Configure basic settings (model preferences, permissions)
+- Understand settings precedence (managed > CLI > local > project > user)
+
+**Done when:**
+- Settings file exists with schema validation
+- VS Code provides autocomplete for settings
+
+**Time estimate:** 30 minutes
+
+---
+
+### Task 7.3: Phase gate hook
+
+- Write phase gate hook (bash or agent type) that checks HANDOFF.md for phase completion marker
+- Hook blocks progression to next phase until review protocol is complete
+- Add phase completion markers to HANDOFF.md format
+- Update phase_review.md to include cross-AI audit step and marker insertion
+
+**Done when:**
+- Claude is blocked from starting next-phase work without the marker
+- Phase review protocol includes: cross-AI audit → triage → Exam mode fixes → marker
+- Hook fires and blocks correctly (tested)
+
+**Time estimate:** 2-3 hours
+
+---
+
+### Task 7.4: Document the learning system
+
+- Write up the system design: modes, contracts, gates, hooks
+- Explain what it enforces and why
+- Include evidence it works (commit history progression, session logs, mode transitions)
+- This is the portfolio artifact — not the bot, not the code
+
+**Done when:**
+- A stranger can read the writeup and understand the system
+- The writeup links to concrete evidence (commits, session notes, Exam mode artifacts)
+
+**Time estimate:** 2-3 hours
+
+---
+
+### Task 7.5: Evaluate Project 2 — the learning bot
+
+This system taught you TypeScript. The next project uses the same infrastructure to teach others.
+
+- Review what the learning system actually needed: memory (HANDOFF.md), curriculum (task-plan.md), modes (adaptive difficulty), enforcement (hooks/gates), cross-AI audit
+- Identify which pieces are reusable vs project-specific
+- Sketch the learning bot concept: message-based tutoring with curriculum progression, session memory, mode transitions, and progression enforcement
+- Decide: is this a new repo, or an extension of ctx?
+- Output: a `PROJECT2.md` or equivalent scoping doc — not a full task plan, just enough to know if it's real
+
+**Done when:**
+- You've answered: what would this product do, who is it for, and is it worth building?
+- Decision captured in writing
+
+**Time estimate:** 1-2 hours (thinking, not coding)
 
 ---
 
@@ -758,10 +847,11 @@ When parsing calendar photo:
 |-------|-------|---------|
 | 1: Trello Foundation | 1 | TrelloService extracted, config working |
 | 2: Obsidian Foundation | 1-2 | Can write to vault from code |
-| 3: Google Calendar | 1-2 | Can create events, syncs to Apple Calendar |
+| ~~3: Google Calendar~~ | ~~1-2~~ | ~~DESCOPED~~ |
 | 4: The Bot | 2 | Working locally, Claude parsing |
 | 5: Deploy | 1 | Live on Fly.io |
-| 6: Polish | 2-3 | Calendar photo parsing, daily digest, reliable |
+| 6: Polish | 2-3 | Vault sync, Telegram UX, daily digest, batch processing |
+| 7: Learning System | 1 | Portable, enforceable learning infrastructure |
 
 **Total to usable system: 8-12 weeks**
 

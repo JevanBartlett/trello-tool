@@ -216,3 +216,24 @@ When a meaningful bug occurs, log:
 **Quick-check:** Result pattern flow — partial. Described internal gates of a single Result-returning function correctly. Missed the chaining pattern (check first result, bail if bad, proceed to next call). Stays in "Still Working Through."
 
 **Quick-check candidates for next session:** Result pattern chaining (hands-on in handleMessage), `z.enum()`, Express async route handlers
+
+### Session 2026-02-14
+**Built/Changed:**
+- `src/gateway/server.ts` — Completed Task 4.4: full end-to-end wiring. Added `handleMessage()` with Result-based routing (parse → switch on type → TrelloService/ObsidianService → reply). Fixed import order bug (dotenv must load before parser). Fixed two TypeScript type errors. Cleaned up stale TODO and typo. Live tested: Telegram → Claude parse → Trello card → bot reply.
+- Config: set `trello.defaultInboxListId` in `~/.ctx/config.json` for live testing.
+
+**Learned:**
+- **Import order matters with side effects** — `import 'dotenv/config'` must come before any module that reads `process.env` at load time. Parser creates Anthropic client at import time, so if dotenv hasn't run yet, the API key is `undefined`. Silent failure — no error, just empty credentials.
+- **Module-level narrowing doesn't carry into functions** — TypeScript narrows `trellodefaultlist` after `process.exit(1)` guard at module level, but inside `handleMessage()` it reverts to `string | undefined`. Fix: non-null assertion `!`.
+- **`??` nullish coalescing bridges null vs undefined** — Parser's `dueDate` is `string | null | undefined` (from Zod `.nullable().optional()`), but `createCard` expects `string | undefined`. Fix: `safeData.dueDate ?? undefined` converts null to undefined.
+- **Hidden TypeScript errors** — when one function argument fails type checking, subsequent argument errors may be hidden until the first is fixed.
+- **Unchecked Result values** — `createCard` returns a Result but `handleMessage` doesn't check it. Card creation can fail silently while the bot replies "success". (Tracked for Task 4.5.)
+- **`tsc` vs `tsc --noEmit`** — `tsc` emits .js files (build), `tsc --noEmit` only checks types (typecheck). Use `npm run typecheck` not raw `tsc`.
+- **502 Bad Gateway from ngrok** — means ngrok is running but nothing is listening on localhost:3000. Server was stopped.
+- **`source .env` vs dotenv** — `.env` is for Node's dotenv, not the shell. `source` may include quotes from the file format.
+
+**Bugs hit:**
+1. Import order: dotenv loaded after parser → Anthropic client created with undefined API key → all parsing fails with "cactus" reply. Fixed by moving `import 'dotenv/config'` to line 1.
+2. Trello card not created despite success reply — `"thursday"` not a valid Trello date. `createCard` Result not checked. (Task 4.4a-7 + 4.5.)
+
+**Quick-check candidates for next session:** `z.enum()`, Express async route handlers, Result return value checking
