@@ -31,8 +31,32 @@ function formatTime(): string {
 export class ObsidianService {
   constructor(private vaultPath: string) {}
 
+  private buildDate(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    return dateString;
+  }
+
+  private safePath(userPath: string): Result<string> {
+    const resolved = path.resolve(this.vaultPath, userPath);
+
+    if (!resolved.startsWith(this.vaultPath)) {
+      return {
+        success: false,
+        error: {
+          code: 'PATH_TRAVERSAL_ERROR',
+          message: `Path escapes vault: ${userPath}`,
+        },
+      };
+    }
+    return { success: true, data: resolved };
+  }
+
   getDailyNotePath(): string {
-    const dateString = new Date().toISOString().slice(0, 10);
+    const dateString = this.buildDate();
     return `${this.vaultPath}/Daily/${dateString}.md`;
   }
 
@@ -42,7 +66,7 @@ export class ObsidianService {
   async appendToDaily(content: string): Promise<Result<void>> {
     const notesPath = this.getDailyNotePath();
     const dir = path.dirname(notesPath);
-    const dateString = new Date().toISOString().slice(0, 10);
+    const dateString = this.buildDate();
 
     try {
       // Ensure Daily/ folder exists
@@ -99,10 +123,11 @@ export class ObsidianService {
   }
 
   async createNote(path: string, content: string): Promise<Result<void>> {
-    const notesPath = path;
+    const safe = this.safePath(path);
+    if (!safe.success) return safe;
 
     try {
-      await fs.writeFile(notesPath, content);
+      await fs.writeFile(safe.data, content);
     } catch (error) {
       return {
         success: false,
@@ -119,9 +144,11 @@ export class ObsidianService {
   }
 
   async readNote(path: string): Promise<Result<string>> {
-    const notesPath = path;
+    const safe = this.safePath(path);
+    if (!safe.success) return safe;
+
     try {
-      const fileContent = await fs.readFile(notesPath, 'utf-8');
+      const fileContent = await fs.readFile(safe.data, 'utf-8');
       return {
         success: true,
         data: fileContent,

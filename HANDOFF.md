@@ -6,10 +6,18 @@ Task
 
 Objective: Build Telegram bot gateway — the product's front door
 Phase / Task: Phase 4 / Task 4.4a: Hardening pass
-Status: not started
+Status: COMPLETE
 
 Progress
-Task 4.4 complete. Full end-to-end flow working: Telegram message → Claude Haiku parses → routes to TrelloService (task) or ObsidianService (note) → bot replies with confirmation. Live tested with ngrok tunnel.
+Task 4.4a complete. All 8 hardening subtasks done:
+- 4.4a-1: Webhook authentication — `X-Telegram-Bot-Api-Secret-Token` header check, 401 on mismatch, fail-fast at startup
+- 4.4a-2: Path traversal guard — `safePath()` helper on ObsidianService blocks vault escapes in `createNote`/`readNote`
+- 4.4a-3: Timezone fix — `buildDate()` uses local time (`getFullYear`/`getMonth`/`getDate`) instead of UTC `toISOString`
+- 4.4a-4: Startup config validation — fail-fast guards for `TRELLO_API_KEY`, `TRELLO_TOKEN`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`. Removed `!` non-null assertions. Removed dead runtime check in `sendReply`.
+- 4.4a-5: `request()` non-JSON handling — `response.json()` wrapped in try/catch, returns `PARSE_ERROR` Result
+- 4.4a-6: Config read error handling — `readFileSync` moved inside try/catch for Result contract
+- 4.4a-7: Due-date contract — `SYSTEM_PROMPT` → `buildSystemPrompt()` function, injects today's local date, instructs Haiku to return YYYY-MM-DD format
+- 4.4a-8: Zod schema — `LabelSchema.color` now `.nullable()` for colorless Trello labels
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -23,21 +31,25 @@ Decisions Made
 - `dueDate` schema uses `.nullable().optional()` — Claude sometimes returns null instead of omitting
 - `sendReply()` returns `Promise<void>` not `Result<void>` — fire-and-forget, nobody can act on a failed reply
 - `import 'dotenv/config'` must be first import — modules that read `process.env` at load time need env populated first
+- Webhook secret registered with Telegram via `setWebhook?secret_token=...` — Telegram now sends the header
+- `safePath` is a private class method, not a standalone function — only used internally by ObsidianService
+- `buildDate` as private method (could be standalone, but works as-is)
 
 Files in Play
-- `src/gateway/server.ts` — Complete gateway: Express server, webhook handler, `sendReply()`, `handleMessage()` with Result-based routing, service initialization with fail-fast guards.
-- `src/gateway/parser.ts` — `parseMessage()` function. Calls Claude Haiku, validates with Zod, returns `Result<ParsedMessage>`.
-- `src/utils/request.ts` — Shared `request()` utility extracted from TrelloService.
-- `src/services/trello-service.ts` — Uses shared `request()` import.
-- `~/.ctx/config.json` — Has `trello.defaultInboxListId` and `obsidian.defaultVaultPath`.
+- `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing
+- `src/gateway/parser.ts` — `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format
+- `src/services/obsidian-service.ts` — `safePath()` guard, `buildDate()` local timezone helper
+- `src/services/config-service.ts` — `readFileSync` inside try/catch
+- `src/utils/request.ts` — `response.json()` try/catch for non-JSON responses
+- `src/types/trello.ts` — `LabelSchema.color` nullable
+- `~/.ctx/config.json` — Has `trello.defaultInboxListId` and `obsidian.defaultVaultPath`
 
 What's Next
-Task 4.4a: Hardening pass. 8 subtasks addressing security, correctness, and robustness. See task-plan.md for full list. Start with 4.4a-1 (webhook authentication) or 4.4a-4 (startup config validation) — both are quick wins.
+Phase 4A: The Agent Loop. Replace classifier→switch dispatch with tool-calling loop. Start with Task 4A.1 (define tool schemas). See task-plan.md for full breakdown.
 
 Known Issues
-1. Due date format mismatch — parser returns "thursday", Trello expects ISO date string. (4.4a-7)
-2. `createCard` Result not checked in `handleMessage` — card creation can fail silently while bot replies "success". (Task 4.5)
-3. `trellodefaultlist!` non-null assertion — works but is a code smell. Module-level narrowing doesn't carry into functions.
+1. `createCard` Result not checked in `handleMessage` — card creation can fail silently while bot replies "success". (Will be replaced by agent loop in 4A)
+2. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
 
 Blockers
 None.
@@ -47,13 +59,13 @@ Failed Approaches
 - Import order: `dotenv/config` was imported after parser — Anthropic client created with undefined API key, all parsing silently failed.
 
 This Week's Pattern
-Silent failures — import order bug produced no error message, just empty credentials. Unchecked Result values let Trello failures pass as successes. Visibility and error checking are recurring themes.
+Defense in depth — every external boundary (webhook, file paths, API responses, config reads, env vars) now has explicit validation. The theme from last session (silent failures) is addressed by fail-fast guards and Result-based error handling at every edge.
 
 Last Session
 
 Date: 2026-02-14
-Duration: ~2 hours
-Mode: Coach (70%) / Teach (30% — import order, module narrowing, nullish coalescing)
+Duration: ~1.5 hours
+Mode: Teach (90%) — webhook auth, path traversal, timezone bugs, startup validation, error handling patterns all new concepts
 Kill? clean
 
 Agent Reading Protocol

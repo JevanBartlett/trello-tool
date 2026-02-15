@@ -542,14 +542,14 @@ Address security, correctness, and robustness findings before wiring error handl
 
 #### Subtasks
 
-- [ ] **4.4a-1: Webhook authentication** — verify Telegram secret token header on `/webhook`; reject unauthenticated requests
-- [ ] **4.4a-2: Obsidian path traversal guard** — restrict read/write paths to vault-relative only; reject absolute paths and `..` traversal
-- [ ] **4.4a-3: Timezone fix** — daily note date uses local time, not UTC `toISOString()`; entries and filename use same timezone
-- [ ] **4.4a-4: Startup config validation** — fail fast with clear messages for missing `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BASE_URL`, `ANTHROPIC_API_KEY`
-- [ ] **4.4a-5: `request()` non-JSON handling** — wrap `response.json()` in try/catch to maintain `Result<T>` contract on HTML/error responses
-- [ ] **4.4a-6: Config read error handling** — catch `readFileSync` failures within `Result` flow
-- [ ] **4.4a-7: Due-date contract consistency** — align parser output format with what TrelloService actually accepts (parseable date strings, not "thursday")
-- [ ] **4.4a-8: Zod schema fixes** — `LabelSchema.color` should be `.nullable()` (Trello returns `null` for colorless labels); audit other schemas for similar gaps
+- [x] **4.4a-1: Webhook authentication** — verify Telegram secret token header on `/webhook`; reject unauthenticated requests
+- [x] **4.4a-2: Obsidian path traversal guard** — restrict read/write paths to vault-relative only; reject absolute paths and `..` traversal
+- [x] **4.4a-3: Timezone fix** — daily note date uses local time, not UTC `toISOString()`; entries and filename use same timezone
+- [x] **4.4a-4: Startup config validation** — fail fast with clear messages for missing `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BASE_URL`, `ANTHROPIC_API_KEY`
+- [x] **4.4a-5: `request()` non-JSON handling** — wrap `response.json()` in try/catch to maintain `Result<T>` contract on HTML/error responses
+- [x] **4.4a-6: Config read error handling** — catch `readFileSync` failures within `Result` flow
+- [x] **4.4a-7: Due-date contract consistency** — align parser output format with what TrelloService actually accepts (parseable date strings, not "thursday")
+- [x] **4.4a-8: Zod schema fixes** — `LabelSchema.color` should be `.nullable()` (Trello returns `null` for colorless labels); audit other schemas for similar gaps
 
 **Done when:**
 - Unauthenticated webhook requests are rejected
@@ -564,18 +564,367 @@ Address security, correctness, and robustness findings before wiring error handl
 
 ---
 
-### Task 4.5: Error handling
+---
+# Phase 4A: The Agent Loop
 
-- If Claude parsing fails → default to note, log error
-- If Trello fails → reply with error, log details
-- If Obsidian fails → reply with error, log details
-- If Calendar fails → reply with error, log details
-- Never lose the original message
+**Goal:** Replace the classifier→switch dispatch with a tool-calling loop. The LLM decides which services to call, executes them, sees results, and decides what to do next.
 
-**Done when:** Failures are graceful and logged, original input preserved
+**Skills:** Anthropic tool use API, agent loop pattern, message accumulation, multi-step reasoning, human-in-the-loop confirmation
 
-**Time estimate:** 1 hour
+**Why now:** You have working services (Trello, Obsidian), a working gateway (Express + Telegram webhook), and a working LLM integration (Anthropic SDK + Haiku). The only thing your current architecture can't do is multi-step tasks. This phase fixes that by giving Haiku direct access to your services as tools and letting it loop until the task is done.
 
+**What changes:** `parser.ts` becomes `agent.ts`. The `switch(parsed.type)` routing in `server.ts` becomes a `while` loop. Your services don't change at all.
+
+**Prerequisites:** Phase 4 complete (including 4.4a hardening and 4.5 error handling).
+
+---
+
+## Task 4A.1: Define tool schemas
+
+Convert your existing service methods into Anthropic tool definitions.
+
+**Create `src/agent/tools.ts`:**
+
+You already have Zod schemas on your services. Now you need to express them in the shape the Anthropic SDK expects for tool use. Each tool gets a `name`, `description`, and `input_schema` (JSON Schema, which Zod can generate via `zod-to-json-schema` — or you write by hand, your call).
+
+**Tools to define (map directly from your existing services):**
+
+| Tool Name | Source | What It Does |
+|-----------|--------|-------------|
+| `create_task` | `TrelloService.createCard()` | Creates a Trello card with name, optional description, optional due date |
+| `get_cards` | `TrelloService.getCards()` | Lists cards on a given list |
+| `move_card` | `TrelloService.moveCard()` | Moves a card to a different list |
+| `archive_card` | `TrelloService.archiveCard()` | Archives a card |
+| `set_due_date` | `TrelloService.setDue()` | Sets or updates due date on a card |
+| `append_note` | `ObsidianService.appendToDaily()` | Appends timestamped entry to today's daily note |
+| `search_notes` | `ObsidianService.searchNotes()` | Searches Obsidian vault for a query |
+| `read_daily` | `ObsidianService.getDailyNotePath() + readNote()` | Reads today's daily note |
+
+**Example (one tool — you write the rest):**
+
+```typescript
+const tools = [
+  {
+    name: 'create_task',
+    description: 'Create a new task as a Trello card. Use when the user mentions something actionable that needs to be tracked.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string', description: 'The task title — clean it up from informal input' },
+        description: { type: 'string', description: 'Optional details or context for the task' },
+        due_date: { type: 'string', description: 'ISO 8601 date string if a deadline is mentioned. Resolve relative dates like "thursday" to actual dates.' },
+      },
+      required: ['name'],
+    },
+  },
+  // ... rest of tools
+];
+```
+
+**Decisions you need to make:**
+
+- Do you convert Zod schemas to JSON Schema with a library, or hand-write them? Hand-writing is simpler for 8 tools. Library is cleaner if you plan to add many more. Pick one.
+- Tool descriptions matter a lot. They're how Haiku decides which tool to use. Write them like you're explaining to a new team member what each one does and when to use it.
+
+**Done when:**
+- All 8 tools defined with name, description, and input_schema
+- Each schema matches what the corresponding service method actually accepts
+- Exported as an array from `src/agent/tools.ts`
+
+**Time estimate:** 1-1.5 hours
+
+---
+
+## Task 4A.2: Build the agent loop
+
+Replace `parser.ts` with `agent.ts`. This is the core change.
+
+**Create `src/agent/agent.ts`:**
+
+The structure:
+
+```
+1. Receive user message (from Telegram)
+2. Build messages array: system prompt + user message
+3. Call Haiku with messages + tools
+4. Check response:
+   a. If stop_reason is 'end_turn' → extract text, return to user
+   b. If stop_reason is 'tool_use' → execute each tool call, 
+      append tool results to messages, go to step 3
+5. Safety: if iterations > MAX_ITERATIONS, break and tell user
+```
+
+**The system prompt (replaces your classifier prompt):**
+
+```
+You are a personal assistant that helps capture and organize tasks, notes, and information.
+You have access to tools for managing Trello cards and Obsidian notes.
+
+When the user sends informal input:
+- If it's actionable → use create_task
+- If it's informational → use append_note
+- If it requires multiple steps → call tools in sequence
+- If ambiguous → default to append_note
+
+The user is texting quickly from their phone during meetings. Input will be informal.
+Clean up the content before creating tasks or notes.
+
+Resolve relative dates: "thursday" means the next upcoming Thursday.
+Today is ${new Date().toLocaleDateString()}.
+
+Always confirm what you did in a brief, friendly reply.
+```
+
+**What the loop looks like (pseudocode — you write the real version):**
+
+```typescript
+async function runAgent(userMessage: string): Promise<string> {
+  const messages = [{ role: 'user', content: userMessage }];
+  let iterations = 0;
+  const MAX_ITERATIONS = 10;
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-latest',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      tools: tools,
+      messages: messages,
+    });
+
+    // Accumulate assistant response into messages
+    messages.push({ role: 'assistant', content: response.content });
+
+    if (response.stop_reason === 'end_turn') {
+      // Extract text blocks from response.content
+      // Return the text to the user
+    }
+
+    if (response.stop_reason === 'tool_use') {
+      // Find all tool_use blocks in response.content
+      // Execute each one against your services
+      // Build tool_result messages
+      // Push tool results into messages
+      // Loop continues
+    }
+  }
+
+  return 'I hit my iteration limit. Something might be stuck.';
+}
+```
+
+**Key concept — message accumulation:**
+
+Every Anthropic API call sees the full conversation so far. You push the assistant's response (including tool_use blocks) into messages, then push the tool results, then call the API again. Haiku sees what it asked for and what it got back, and decides what to do next.
+
+This is the exact same pattern as Scott's `run.ts` — the `while(true)` with `messages.push(...)`.
+
+**Done when:**
+- `runAgent(message)` takes a string, returns a string
+- Single-step tasks work: "nancy thursday uat" → creates card → returns confirmation
+- Multi-step tasks work: "what tasks do I have on my inbox list" → calls get_cards → returns formatted list
+- MAX_ITERATIONS prevents infinite loops
+- Replaces `parseMessage()` in your gateway's `handleMessage()`
+
+**Time estimate:** 3-4 hours (this is the hardest task in the phase)
+
+---
+
+## Task 4A.3: Wire the executor
+
+Create the function that takes a tool name + arguments and calls the right service.
+
+**Create `src/agent/executor.ts`:**
+
+```typescript
+async function executeTool(
+  name: string, 
+  input: Record<string, unknown>
+): Promise<string> {
+  switch (name) {
+    case 'create_task':
+      // call trelloService.createCard(...)
+      // return Result-friendly string
+    case 'append_note':
+      // call obsidianService.appendToDaily(...)
+    // ... etc
+    default:
+      return `Unknown tool: ${name}`;
+  }
+}
+```
+
+**Important:** Your services return `Result<T>`. The executor needs to unwrap those results into strings that Haiku can understand. If the result is success, format the data clearly. If it's failure, return the error message so Haiku can tell the user what went wrong (or try something else).
+
+**Done when:**
+- Every tool defined in 4A.1 has a corresponding case in the executor
+- Success results return useful data (card ID, card name, note path, etc.)
+- Failure results return clear error messages
+- The executor is called from the agent loop in 4A.2
+
+**Time estimate:** 1-1.5 hours
+
+---
+
+## Task 4A.4: Update the gateway
+
+Replace the classifier dispatch in `server.ts` with the agent.
+
+**What changes in `handleMessage()`:**
+
+Before (your current code):
+```
+const parsed = await parseMessage(text);
+switch (parsed.type) {
+  case 'task': trelloService.createCard(...)
+  case 'note': obsidianService.appendToDaily(...)
+  ...
+}
+```
+
+After:
+```
+const reply = await runAgent(text);
+// Send reply to Telegram
+```
+
+That's it. The entire routing logic collapses into one function call.
+
+**Keep the existing error handling pattern:** If `runAgent` throws, catch it, log it, reply with a generic error to Telegram. Same structure you already have.
+
+**Done when:**
+- `handleMessage()` calls `runAgent()` instead of `parseMessage()` + switch
+- End-to-end works: Telegram message → agent loop → tool execution → Telegram reply
+- Old `parser.ts` is either deleted or kept for reference (your call)
+
+**Time estimate:** 30 minutes
+
+---
+
+## Task 4A.5: Human-in-the-loop for destructive operations
+
+Some tools shouldn't execute without confirmation. Archive and move are destructive.
+
+**The pattern (adapted for Telegram):**
+
+When the agent wants to call `archive_card` or `move_card`:
+1. Instead of executing immediately, send a confirmation message to Telegram: "Archive card 'Follow up with Nancy' — confirm? (yes/no)"
+2. Wait for the user's next message
+3. If "yes" → execute the tool, continue the loop
+4. If "no" → return a tool_result that says "User declined" so Haiku can respond accordingly
+
+**Implementation options (pick one):**
+
+- **Simple:** Tag certain tools as `requiresApproval` in your tool definitions. In the executor, check the tag before executing. If approval needed, reply to Telegram and wait for confirmation. This blocks the loop but is easy to build.
+- **State-based:** Store pending approvals in memory (a Map keyed by chat ID). When a confirmation comes in via webhook, resolve the pending operation. This is more robust but more complex.
+
+Start with simple. You can upgrade later.
+
+**Done when:**
+- `archive_card` and `move_card` prompt for confirmation before executing
+- User can approve or reject
+- Rejected tool calls feed back into the agent loop so Haiku can respond naturally
+- Non-destructive tools (create_task, append_note, search, read) execute immediately
+
+**Time estimate:** 2-3 hours
+
+---
+
+## Task 4A.6: Agent error handling
+
+Wrap the agent loop in robust error handling. This replaces/extends your existing Task 4.5 from the original plan.
+
+**Scenarios to handle:**
+
+| Scenario | Behavior |
+|----------|----------|
+| Anthropic API call fails (network, rate limit) | Retry once with backoff. If still fails, reply with friendly error. Never lose the original message. |
+| Haiku requests a tool that doesn't exist | Return tool_result with error message. Haiku will self-correct or explain. |
+| Tool execution fails (Trello API down, bad input) | Return the error as tool_result. Let Haiku decide how to respond. |
+| Haiku loops without progress | MAX_ITERATIONS catches this. Reply explaining the limit. |
+| Haiku returns empty response | Fallback: "I couldn't process that. Try rephrasing?" |
+
+**The key insight from Scott's repo:** Don't try to handle every error in your code. Return errors as tool results and let the LLM figure out how to communicate the failure. The LLM is better at writing error messages than your switch statement.
+
+**Done when:**
+- API failures don't crash the server
+- Tool failures get reported back to Haiku, which explains them to the user
+- No message is ever silently lost
+- Structured logging captures: user input, tools called, results, final response, token usage
+
+**Time estimate:** 1.5-2 hours
+
+---
+
+## Task 4A.7: Context window awareness
+
+Add basic token tracking. You don't need compaction yet (Telegram conversations are short), but you need to know when you're approaching limits.
+
+**Simple version:**
+
+- Track messages array length per conversation
+- Estimate tokens using character count ÷ 4 (same approach as Scott's repo)
+- Log a warning if a single agent run exceeds 50% of Haiku's context window
+- For now, each Telegram message starts a fresh conversation (no persistence between messages)
+
+**Future consideration (not this task):** If you add conversation persistence (multi-message sessions), you'll need compaction like Scott built. For now, fresh context per message is fine because your use case is quick captures, not extended conversations.
+
+**Done when:**
+- Token usage logged per agent run
+- Warning emitted if usage is high
+- You can see in logs how much each interaction costs
+
+**Time estimate:** 30-45 minutes
+
+---
+
+## Phase 4A Checkpoint
+
+**Done when all of this works end-to-end:**
+
+```
+You (2:47pm): "nancy thursday uat"
+Bot: ✓ Created task: "Follow up with Nancy about UAT" — due Thursday
+
+You (3:12pm): "routing broken again check with dev"
+Bot: ✓ Added to daily note: "routing issue resurfaced — check with dev team"
+
+You (3:30pm): "what tasks did I create today"
+Bot: Here's what's on your inbox list:
+     • Follow up with Nancy about UAT — due Thu Feb 20
+     • Review deployment checklist — no due date
+
+You (4:00pm): "archive the nancy card"
+Bot: Archive "Follow up with Nancy about UAT"? (yes/no)
+You: yes
+Bot: ✓ Archived.
+
+You (4:15pm): "search my notes for routing issues"
+Bot: Found 3 matches:
+     • Daily/2026-02-14.md: "routing issue resurfaced — check with dev team"
+     • Daily/2026-02-10.md: "routing broken in staging env"
+     • Notes/fco-issues.md: "routing logic needs refactor per Nancy"
+```
+
+**None of these interactions are hard-coded.** The agent loop handles all of them through tool selection. Adding a new capability (like a future Calendar service) means defining a new tool and adding a case to the executor. The agent figures out when to use it.
+
+**Total estimated time:** 10-13 hours (2-3 weekends at your pace)
+
+---
+
+## What This Replaces in the Original Plan
+
+| Original Task | Status |
+|---------------|--------|
+| Phase 6 Task 6.2 (`/status`, `/tasks`, `/undo` commands) | **Replaced by** natural language through the agent loop |
+| Phase 6 Task 6.4 (Batch processing) | **Replaced by** agent making multiple tool calls per message |
+
+**What stays unchanged:**
+- Phase 5 (Deploy) — Docker, Fly.io, secrets, health check. Proceed as planned.
+- Phase 6 Task 6.1 (Vault sync) — Still needed, agent doesn't change this.
+- Phase 6 Task 6.3 (Daily digest cron) — Still needed, agent can't self-initiate.
 ---
 
 # Phase 5: Deploy
@@ -701,15 +1050,9 @@ Add test coverage for the core paths: API integrations, file I/O, and parser log
 
 ---
 
-### Task 6.2: Better Telegram UX
+### ~~Task 6.2: Better Telegram UX~~ (REPLACED)
 
-- `/status` — show today's captured items
-- `/tasks` — show recent tasks created
-- `/undo` — archive the last created task
-
-**Done when:** Basic commands work
-
-**Time estimate:** 2 hours
+**Replaced by** natural language through the agent loop.
 
 ---
 
@@ -725,22 +1068,9 @@ Add test coverage for the core paths: API integrations, file I/O, and parser log
 
 ---
 
-### Task 6.4: Batch processing
+### ~~Task 6.4: Batch processing~~ (REPLACED)
 
-For when you dump multiple thoughts at once:
-
-```
-"nancy thursday uat
-routing broken check with dev  
-mom birthday gift
-remind me to call doctor"
-```
-
-Should create 4 separate items.
-
-**Done when:** Multi-line input creates multiple items
-
-**Time estimate:** 1 hour
+**Replaced by** agent making multiple tool calls per message.
 
 ---
 

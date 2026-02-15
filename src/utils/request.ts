@@ -30,7 +30,18 @@ export async function request<T>(
     };
   }
 
-  const data: unknown = await response.json();
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    return {
+      success: false,
+      error: {
+        code: 'PARSE_ERROR',
+        message: 'Response was not valid JSON',
+      },
+    };
+  }
   const parsed = schema.safeParse(data);
 
   if (!parsed.success) {

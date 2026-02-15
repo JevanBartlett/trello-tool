@@ -237,3 +237,27 @@ When a meaningful bug occurs, log:
 2. Trello card not created despite success reply — `"thursday"` not a valid Trello date. `createCard` Result not checked. (Task 4.4a-7 + 4.5.)
 
 **Quick-check candidates for next session:** `z.enum()`, Express async route handlers, Result return value checking
+
+### Session 2026-02-14 (session 2) — Task 4.4a Hardening
+**Built/Changed:**
+- `src/gateway/server.ts` — Webhook auth: checks `X-Telegram-Bot-Api-Secret-Token` header, returns 401 on mismatch. Startup guards for all env vars (`TELEGRAM_WEBHOOK_SECRET`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`). Removed `!` non-null assertions. Removed dead runtime check in `sendReply`.
+- `src/services/obsidian-service.ts` — `safePath()` private helper: resolves path with `path.resolve()`, blocks if result escapes vault. `buildDate()` private helper: local timezone date string. Both `createNote` and `readNote` use `safePath`. Both `getDailyNotePath` and `appendToDaily` use `buildDate`.
+- `src/gateway/parser.ts` — `SYSTEM_PROMPT` constant → `buildSystemPrompt()` function. Injects today's local date. Instructs Haiku to return YYYY-MM-DD instead of "thursday".
+- `src/utils/request.ts` — `response.json()` wrapped in try/catch, returns `PARSE_ERROR` Result on failure.
+- `src/services/config-service.ts` — `readFileSync` moved inside try/catch block.
+- `src/types/trello.ts` — `LabelSchema.color` now `.nullable()`.
+
+**Learned:**
+- **Webhook authentication** — Telegram sends `X-Telegram-Bot-Api-Secret-Token` header when you register with `secret_token` param. Server verifies header matches, rejects 401 otherwise. Both sides need the secret.
+- **`req.headers` is an object, not a function** — access with bracket notation `req.headers['header-name']`, not parentheses. Dashes in header names require brackets (can't use dot notation).
+- **`return` after `res.sendStatus()`** — without it, Express keeps executing and tries to send a second response, throwing "headers already sent" error.
+- **`===` vs `==`** — strict equality is TypeScript convention, avoids type coercion edge cases.
+- **Path traversal attack** — user input like `../../etc/passwd` in a file path escapes the intended directory. `path.resolve()` normalizes it, then `startsWith()` checks containment.
+- **Private helper methods** — `private` means only callable inside the class. Good for internal safety checks not part of the public API.
+- **UTC vs local time** — `toISOString()` always returns UTC. At 11pm Eastern, UTC is already tomorrow. Use `getFullYear()`/`getMonth()`/`getDate()` for local time. `getMonth()` is zero-indexed.
+- **`padStart(2, '0')`** — turns `9` into `09` for consistent date formatting.
+- **Fail-fast startup** — validate all required config before creating services. Crash with clear message instead of mysterious failures later. Once validated, `!` assertions are unnecessary.
+- **Dead code removal** — if startup guarantees a value exists, per-call checks for that value are dead code.
+- **`.nullable()` vs `.optional()` in Zod** — `.nullable()` accepts `null` (field present, value null). `.optional()` accepts `undefined` (field missing). Different things.
+
+**Quick-check candidates for next session:** `path.resolve()` behavior, webhook auth flow, `getMonth()` zero-indexing

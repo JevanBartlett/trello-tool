@@ -11,7 +11,7 @@ export const dateStringSchema = z
 export const LabelSchema = z.object({
   id: z.string(),
   name: z.string(),
-  color: z.string(),
+  color: z.string().nullable(),
 });
 
 export const MemberSchema = z.object({

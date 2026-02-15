@@ -32,16 +32,29 @@ if (trellodefaultlist === undefined) {
   console.error('Default Trello Board not set');
   process.exit(1);
 }
+if (!process.env.TELEGRAM_WEBHOOK_SECRET) {
+  console.error('TELEGRAM_WEBHOOK_SECRET not set');
+  process.exit(1);
+}
+if (!process.env.TRELLO_API_KEY || !process.env.TRELLO_TOKEN) {
+  console.error('TRELLO CONFIG NOT SET');
+  process.exit(1);
+}
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('ANTHROPIC KEY NOT SET');
+  process.exit(1);
+}
 
-const trello = new TrelloService(process.env.TRELLO_API_KEY!, process.env.TRELLO_TOKEN!);
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  console.error('TELEGRAM BOT TOKEN NOT SET');
+  process.exit(1);
+}
+
+const trello = new TrelloService(process.env.TRELLO_API_KEY, process.env.TRELLO_TOKEN);
 const obsidian = new ObsidianService(obsidiandefault);
 
 async function sendReply(chatId: number, text: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) {
-    console.error('TELEGRAM_BOT_TOKEN not set');
-    return;
-  }
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   const response = await fetch(url, {
@@ -113,6 +126,13 @@ app.use(express.json());
 // run this function. req = the incoming request, res = what we send back.
 
 app.post('/webhook', (req: Request, res: Response) => {
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const header = req.headers['x-telegram-bot-api-secret-token'];
+
+  if (header !== secret) {
+    res.sendStatus(401);
+    return;
+  }
   const update = req.body as TelegramUpdate;
 
   if (update.message?.text && update.message.chat.id) {

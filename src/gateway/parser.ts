@@ -12,12 +12,20 @@ export const parsedMessageSchema = z.object({
 
 export type ParsedMessage = z.infer<typeof parsedMessageSchema>;
 
-const SYSTEM_PROMPT = `You are a message parser. You receive short, informal messages and classify them.
+function buildSystemPrompt(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const today = `${year}-${month}-${day}`;
+  return `You are a message parser. You receive short, informal messages and classify them.
+
+Today's date is ${today}.
 
 Determine:
 1. Type: "task" (something to do), "note" (something to remember), or "unknown"
 2. Content: clean up the message into a readable sentence
-3. Due date: extract if mentioned (e.g. "thursday", "tomorrow", "feb 15")
+3. Due date: if mentioned (e.g. "thursday", "tomorrow", "feb 15"), calculate the actual date and return as YYYY-MM-DD format. If no due date is mentioned, omit the field.
 
 Rules:
 - When ambiguous, default to "note"
@@ -25,7 +33,7 @@ Rules:
 
 Examples:
 Input: "nancy thursday uat"
-Output: {"type": "task", "content": "follow up with Nancy about UAT", "dueDate": "thursday"}
+Output: {"type": "task", "content": "follow up with Nancy about UAT", "dueDate": "2026-02-19"}
 
 Input: "routing broken again check with dev"
 Output: {"type": "note", "content": "routing issue resurfaced, check with dev team"}
@@ -35,6 +43,7 @@ Output: {"type": "task", "content": "get birthday gift for mom"}
 
 Input: "quarterly numbers look off"
 Output: {"type": "note", "content": "quarterly numbers look off"}`;
+}
 function stripCodeBlock(text: string): string {
   let cleaned = text.trim();
   if (cleaned.startsWith('```json')) {
@@ -55,7 +64,7 @@ export async function parseMessage(text: string): Promise<Result<ParsedMessage>>
     response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(),
       messages: [{ role: 'user', content: text }],
     });
   } catch {

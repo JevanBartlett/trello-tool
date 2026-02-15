@@ -84,9 +84,8 @@ export class ConfigService {
       return { success: true, data: {} };
     }
 
-    const rawFile = readFileSync(this.configPath, 'utf-8');
-
     try {
+      const rawFile = readFileSync(this.configPath, 'utf-8');
       const jsonFile: unknown = JSON.parse(rawFile);
       const parsedFile = ConfigSchema.safeParse(jsonFile);
 
@@ -101,7 +100,7 @@ export class ConfigService {
     } catch {
       return {
         success: false,
-        error: { code: 'PARSE_ERROR', message: 'Config file is not valid JSON' },
+        error: { code: 'PARSE_ERROR', message: 'Failed to read or parse config file' },
       };
     }
   }
