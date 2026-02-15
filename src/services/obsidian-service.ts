@@ -43,7 +43,7 @@ export class ObsidianService {
   private safePath(userPath: string): Result<string> {
     const resolved = path.resolve(this.vaultPath, userPath);
 
-    if (!resolved.startsWith(this.vaultPath)) {
+    if (resolved !== this.vaultPath && !resolved.startsWith(this.vaultPath + path.sep)) {
       return {
         success: false,
         error: {

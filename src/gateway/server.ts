@@ -84,19 +84,31 @@ async function handleMessage(chatID: number, text: string): Promise<Result<Parse
   const safeData = parsedResult.data;
 
   switch (safeData.type) {
-    case 'task':
-      await trello.createCard(
+    case 'task': {
+      const result = await trello.createCard(
         trellodefaultlist!,
         safeData.content,
         undefined,
         safeData.dueDate ?? undefined,
       );
-      await sendReply(chatID, `✓ task: ${safeData.content}`);
+      if (result.success) {
+        await sendReply(chatID, `✓ task: ${safeData.content}`);
+      } else {
+        await sendReply(chatID, `✗ failed to create task: ${result.error.message}`);
+        return { success: false, error: result.error };
+      }
       break;
-    case 'note':
-      await obsidian.appendToDaily(safeData.content);
-      await sendReply(chatID, `✓ note added to daily`);
+    }
+    case 'note': {
+      const result = await obsidian.appendToDaily(safeData.content);
+      if (result.success) {
+        await sendReply(chatID, `✓ note added to daily`);
+      } else {
+        await sendReply(chatID, `✗ failed to save note: ${result.error.message}`);
+        return { success: false, error: result.error };
+      }
       break;
+    }
     case 'unknown':
       await sendReply(chatID, 'Claude could not classify message as note or task');
       return {

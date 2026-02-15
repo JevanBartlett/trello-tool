@@ -6,7 +6,7 @@ Task
 
 Objective: Build Telegram bot gateway — the product's front door
 Phase / Task: Phase 4 / Task 4.4a: Hardening pass
-Status: COMPLETE
+Status: COMPLETE — cross-AI audit fixes applied
 
 Progress
 Task 4.4a complete. All 8 hardening subtasks done:
@@ -18,6 +18,11 @@ Task 4.4a complete. All 8 hardening subtasks done:
 - 4.4a-6: Config read error handling — `readFileSync` moved inside try/catch for Result contract
 - 4.4a-7: Due-date contract — `SYSTEM_PROMPT` → `buildSystemPrompt()` function, injects today's local date, instructs Haiku to return YYYY-MM-DD format
 - 4.4a-8: Zod schema — `LabelSchema.color` now `.nullable()` for colorless Trello labels
+
+Cross-AI audit fixes (this session):
+- Path traversal `startsWith` prefix collision fixed — now checks `vaultPath + path.sep` to prevent `/vault-evil` bypassing `/vault` guard
+- `handleMessage` now checks Results from `createCard` and `appendToDaily` before replying — no more lying to user on silent failure
+- Remaining hardening items (#3-7) deferred to Task 6.0 in task-plan.md
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -36,20 +41,20 @@ Decisions Made
 - `buildDate` as private method (could be standalone, but works as-is)
 
 Files in Play
-- `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing
+- `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing, Result-checked writes
 - `src/gateway/parser.ts` — `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format
-- `src/services/obsidian-service.ts` — `safePath()` guard, `buildDate()` local timezone helper
+- `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
 - `src/services/config-service.ts` — `readFileSync` inside try/catch
 - `src/utils/request.ts` — `response.json()` try/catch for non-JSON responses
 - `src/types/trello.ts` — `LabelSchema.color` nullable
 - `~/.ctx/config.json` — Has `trello.defaultInboxListId` and `obsidian.defaultVaultPath`
+- `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
 Phase 4A: The Agent Loop. Replace classifier→switch dispatch with tool-calling loop. Start with Task 4A.1 (define tool schemas). See task-plan.md for full breakdown.
 
 Known Issues
-1. `createCard` Result not checked in `handleMessage` — card creation can fail silently while bot replies "success". (Will be replaced by agent loop in 4A)
-2. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
+1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
 
 Blockers
 None.
@@ -59,13 +64,13 @@ Failed Approaches
 - Import order: `dotenv/config` was imported after parser — Anthropic client created with undefined API key, all parsing silently failed.
 
 This Week's Pattern
-Defense in depth — every external boundary (webhook, file paths, API responses, config reads, env vars) now has explicit validation. The theme from last session (silent failures) is addressed by fail-fast guards and Result-based error handling at every edge.
+Cross-AI audit — ran codebase through both Claude and ChatGPT, compared findings, triaged into fix-now vs defer. The `startsWith` prefix collision was the best catch (real security bug both AIs identified independently). The Result-checking fix closes the "silent failure" gap from last session's known issues.
 
 Last Session
 
 Date: 2026-02-14
-Duration: ~1.5 hours
-Mode: Teach (90%) — webhook auth, path traversal, timezone bugs, startup validation, error handling patterns all new concepts
+Duration: ~30 minutes
+Mode: Mixed — Teach (path traversal fix), Delegate (server.ts Result checks, task-plan update)
 Kill? clean
 
 Agent Reading Protocol

@@ -1038,6 +1038,25 @@ Add test coverage for the core paths: API integrations, file I/O, and parser log
 
 # Phase 6: Polish + Reliability
 
+### Task 6.0: Code hardening
+
+Defensive fixes identified during cross-AI audit (Claude + ChatGPT).
+
+- [ ] **6.0-1: Guard empty `response.content` array** — check length before dereferencing `[0]` in parser.ts; empty array currently throws outside the Result pattern
+- [ ] **6.0-2: Typed Anthropic errors** — differentiate auth, rate-limit, and network failures in parser.ts catch block instead of flattening all to `NETWORK_ERROR`
+- [ ] **6.0-3: Zod-validate Telegram webhook payload** — replace `req.body as TelegramUpdate` type assertion with a Zod schema; this is external input from the internet
+- [ ] **6.0-4: Constructor-inject Trello base URL** — move `process.env.TRELLO_BASE_URL` from implicit read inside `buildURL()` to constructor parameter for testability
+- [ ] **6.0-5: Remove `!` assertion in parser** — `process.env.ANTHROPIC_API_KEY!` at module level (parser.ts:5) crashes before any validation can run; pass via function parameter or validate first
+
+**Done when:**
+- Parser handles empty API responses without throwing
+- Anthropic error types surface in logs (auth vs rate-limit vs network)
+- Webhook payload is validated, not trusted
+- TrelloService has no hidden env dependencies
+- No module-level non-null assertions on env vars
+
+---
+
 ### Task 6.1: Vault sync (git-based)
 
 - Vault is a git repo
