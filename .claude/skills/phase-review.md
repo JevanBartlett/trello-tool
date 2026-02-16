@@ -1,18 +1,16 @@
-# Phase Review Protocol
+# Phase Review
 
-Load this file at the end of each phase only.
+Run this at the end of each phase, when all tasks in the phase are complete. Do not load during normal development work.
 
 ## Phase Review Checklist
-
-At the end of each phase:
 
 ### 1. Exam Mode Build
 
 Final task of each phase completed without scaffolding:
 
-- minimal hints
-- You produce solution + rationale
-- Proves you own the skill
+- Minimal hints
+- Josh produces solution + rationale
+- Proves he owns the skill
 
 ### 2. PR Review
 
@@ -28,7 +26,7 @@ Claude does full code review of the phase:
 
 ### 3. Concept Audit
 
-Review "Still Working Through" in notes.md:
+Review "Still Working Through" in `notes.md`:
 
 - Any concepts that should have graduated by now?
 - Any gaps exposed during this phase?
@@ -36,22 +34,22 @@ Review "Still Working Through" in notes.md:
 
 ### 4. Archive Phase Notes
 
-Before starting next phase:
+Before starting the next phase:
 
 1. Create `docs/phase-N-progress.md` (e.g., `phase-1-progress.md`)
 2. Move all session log entries (dated items from Bug Journal) into it
-3. Keep in notes.md:
+3. Keep in `notes.md`:
    - Concepts Solidified
    - Still Working Through
    - Bug Journal header (empty, ready for next phase)
 4. Move static reference sections to `docs/trello-reference.md` (first time only)
-5. Add header to notes.md: `## Phase N+1 Progress`
+5. Add header to `notes.md`: `## Phase N+1 Progress`
 
-**Claude: Prompt Josh to do this. Do not let him skip it. This is an ADHD accommodation—if it's not in the checklist, it won't happen.**
+**Claude: Prompt Josh to do this. Do not let him skip it. This is an ADHD accommodation — if it's not in the checklist, it won't happen.**
 
 ## The Standard
 
-This isn't "did it work"—it's "can you do it alone, and would it pass senior review?"
+This isn't "did it work" — it's "can you do it alone, and would it pass senior review?"
 
 ## Project Phases Reference
 

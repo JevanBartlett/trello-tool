@@ -53,17 +53,19 @@ QA professional learning TypeScript. 17 years financial services. Primary caregi
   - Mode: Teach / Coach / Exam / Delegate
   - Claude states these. Josh confirms. Then begin.
 
-## Reference Docs
+## Skills
 
-Load these on demand:
+Detailed protocols available as slash commands:
 
-- `@docs/learning_protocols.md` — Socratic method, error handling, reflection (load for coaching/learning work)
-- `@docs/session_protocols.md` — Start/end session checklists, quick-check (load at session boundaries)
-- `@docs/phase_review.md` — Exam mode, PR review, concept audit (load at phase completion only)
+- `/session-start` — Start of session checklist
+- `/session-end` — End of session checklist, HANDOFF update, graduation
+- `/quick-check` — Concept quiz from "Still Working Through"
+- `/coaching` — Learning protocols, operating mode details
+- `/phase-review` — Phase completion review, exam mode, concept audit
 
 ## Session Hygiene
 
-- At end of session: update HANDOFF.md with current state (mandatory — see session_protocols.md)
+- At end of session: update HANDOFF.md with current state (mandatory — see `/session-end`)
 - At end of session: flag any "Still Working Through" items that have been used correctly in code for 3+ sessions as graduation candidates
 
 ## Terminal Commands
