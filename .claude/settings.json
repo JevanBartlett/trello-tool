@@ -1,0 +1,67 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Context compaction is about to happen. Before it does, update HANDOFF.md with the current session state: what task you're on, what's been done so far this session, any decisions made, and what's next. This is critical — after compaction, HANDOFF.md is the only state that survives.",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-secret-leaks.sh",
+            "statusMessage": "Scanning for secret leaks...",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh",
+            "statusMessage": "Checking file protection...",
+            "timeout": 10
+          },
+          {
+            "type": "prompt",
+            "prompt": "Check if Claude stated a clear plan before this edit — what file(s), what changes, and why. If a plan was stated and the user confirmed, respond {\"decision\": \"allow\"}. If no plan was stated or user hasn't confirmed, respond {\"decision\": \"block\", \"reason\": \"Checkpoint gate: state your plan (files, changes, why) and wait for user confirm before editing.\"}",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-end-check.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/inject-context.sh",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}

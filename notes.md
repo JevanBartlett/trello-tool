@@ -261,3 +261,27 @@ When a meaningful bug occurs, log:
 - **`.nullable()` vs `.optional()` in Zod** — `.nullable()` accepts `null` (field present, value null). `.optional()` accepts `undefined` (field missing). Different things.
 
 **Quick-check candidates for next session:** `path.resolve()` behavior, webhook auth flow, `getMonth()` zero-indexing
+
+## Phase 4A Progress
+
+### Session 2026-02-15 — Task 4A.1: Define tool schemas
+**Built/Changed:**
+- `src/agent/tools.ts` — NEW. 10 Zod input schemas + Anthropic tool definitions array. Schemas define what the LLM sends to each tool. Descriptions guide Haiku on when to use each tool.
+- `.claude/settings.json` — Added checkpoint gate prompt hook on Edit|Write
+
+**Tools defined:** create_task, get_boards, get_lists, get_cards, move_card, archive_card, set_due_date, append_note, search_notes, read_daily
+
+**Design decisions:**
+- Added `get_boards` and `get_lists` (not in original 8) — agent needs to discover boards/lists to sort inbox cards
+- `create_task.list_id` is optional — defaults to configured inbox, but agent can target a specific list
+- Snake_case field names (not Trello's `idList`) — clearer for the LLM, executor handles the mapping
+- Zod v4 native `z.toJSONSchema()` — no extra library needed. Tried `zod-to-json-schema` first, hit version incompatibility with Zod v4
+
+**Learned:**
+- **Zod v4 built-in JSON Schema** — `z.toJSONSchema(schema)` converts Zod to JSON Schema natively. No need for `zod-to-json-schema` library (which was built for Zod v3).
+- **Tool descriptions matter** — they're how the LLM decides which tool to call. Write them for "when to use" not just "what it does."
+- **Input schemas vs output schemas** — existing Zod schemas (CardSchema, BoardSchema) validate API responses. Tool input schemas are separate — they define what the LLM sends. Different direction, different shape.
+- **`tsx -e` file resolution** — inline eval needs `.ts` extension, unlike normal imports that use `.js` (Node ESM convention).
+- **Claude Code hooks** — `PreToolUse` with prompt type can enforce workflow gates. Exit 2 blocks, stderr feeds back to Claude. Prompt hooks use a small model to evaluate conditions intelligently.
+
+**Quick-check candidates for next session:** `z.toJSONSchema()` output shape, tool description writing, Anthropic tool use API message format

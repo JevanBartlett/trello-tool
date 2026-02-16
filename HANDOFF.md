@@ -5,24 +5,18 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4 / Task 4.4a: Hardening pass
-Status: COMPLETE — cross-AI audit fixes applied
+Phase / Task: Phase 4A / Task 4A.1: Define tool schemas
+Status: COMPLETE
 
 Progress
-Task 4.4a complete. All 8 hardening subtasks done:
-- 4.4a-1: Webhook authentication — `X-Telegram-Bot-Api-Secret-Token` header check, 401 on mismatch, fail-fast at startup
-- 4.4a-2: Path traversal guard — `safePath()` helper on ObsidianService blocks vault escapes in `createNote`/`readNote`
-- 4.4a-3: Timezone fix — `buildDate()` uses local time (`getFullYear`/`getMonth`/`getDate`) instead of UTC `toISOString`
-- 4.4a-4: Startup config validation — fail-fast guards for `TRELLO_API_KEY`, `TRELLO_TOKEN`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`. Removed `!` non-null assertions. Removed dead runtime check in `sendReply`.
-- 4.4a-5: `request()` non-JSON handling — `response.json()` wrapped in try/catch, returns `PARSE_ERROR` Result
-- 4.4a-6: Config read error handling — `readFileSync` moved inside try/catch for Result contract
-- 4.4a-7: Due-date contract — `SYSTEM_PROMPT` → `buildSystemPrompt()` function, injects today's local date, instructs Haiku to return YYYY-MM-DD format
-- 4.4a-8: Zod schema — `LabelSchema.color` now `.nullable()` for colorless Trello labels
+Task 4A.1 complete. Created `src/agent/tools.ts` with:
+- 10 Zod input schemas for agent tools (CreateTaskInput, GetBoardsInput, GetListsInput, GetCardsInput, MoveCardInput, ArchiveCardInput, SetDueDateInput, AppendNoteInput, SearchNotesInput, ReadDailyInput)
+- 10 Anthropic tool definitions with name, description, and input_schema
+- Uses Zod v4 native `z.toJSONSchema()` — no extra library needed
+- Added `get_boards` and `get_lists` beyond original 8 (agent needs board/list discovery to sort inbox)
 
-Cross-AI audit fixes (this session):
-- Path traversal `startsWith` prefix collision fixed — now checks `vaultPath + path.sep` to prevent `/vault-evil` bypassing `/vault` guard
-- `handleMessage` now checks Results from `createCard` and `appendToDaily` before replying — no more lying to user on silent failure
-- Remaining hardening items (#3-7) deferred to Task 6.0 in task-plan.md
+Also this session:
+- Configured checkpoint gate hook in `.claude/settings.json` — prompt-type PreToolUse hook on Edit|Write that checks if Claude stated a plan before editing
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -39,8 +33,14 @@ Decisions Made
 - Webhook secret registered with Telegram via `setWebhook?secret_token=...` — Telegram now sends the header
 - `safePath` is a private class method, not a standalone function — only used internally by ObsidianService
 - `buildDate` as private method (could be standalone, but works as-is)
+- 10 tools (not original 8) — added `get_boards` and `get_lists` for board/list discovery
+- `create_task.list_id` is optional — defaults to configured inbox, executor injects from config
+- Snake_case field names in tool schemas — clearer for LLM than Trello's `idList` convention
+- Zod v4 native `z.toJSONSchema()` over `zod-to-json-schema` library — v4 has it built in, library only supports v3
+- Hand-wrote tool descriptions focused on "when to use" not just "what it does"
 
 Files in Play
+- `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions array
 - `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing, Result-checked writes
 - `src/gateway/parser.ts` — `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
@@ -48,10 +48,11 @@ Files in Play
 - `src/utils/request.ts` — `response.json()` try/catch for non-JSON responses
 - `src/types/trello.ts` — `LabelSchema.color` nullable
 - `~/.ctx/config.json` — Has `trello.defaultInboxListId` and `obsidian.defaultVaultPath`
+- `.claude/settings.json` — Hooks: protect-files, block-secret-leaks, checkpoint gate, session-end, pre-compact, inject-context
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Phase 4A: The Agent Loop. Replace classifier→switch dispatch with tool-calling loop. Start with Task 4A.1 (define tool schemas). See task-plan.md for full breakdown.
+Task 4A.2: Build the agent loop + Task 4A.3: Wire the executor. These can be built together — the loop calls the executor. See task-plan.md for full breakdown.
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
@@ -62,15 +63,16 @@ None.
 Failed Approaches
 - First attempt at `sendReply`: used shared `request()` utility with Zod schema for Telegram response — over-engineered. Simplified to plain `fetch` with `response.ok` check.
 - Import order: `dotenv/config` was imported after parser — Anthropic client created with undefined API key, all parsing silently failed.
+- `zod-to-json-schema` library — incompatible with Zod v4. Switched to native `z.toJSONSchema()`.
 
 This Week's Pattern
-Cross-AI audit — ran codebase through both Claude and ChatGPT, compared findings, triaged into fix-now vs defer. The `startsWith` prefix collision was the best catch (real security bug both AIs identified independently). The Result-checking fix closes the "silent failure" gap from last session's known issues.
+Tool schema design — thinking from the LLM's perspective. Field names, descriptions, and optional vs required all affect how well the agent picks the right tool. Input schemas are separate from output schemas (different direction, different shape).
 
 Last Session
 
-Date: 2026-02-14
-Duration: ~30 minutes
-Mode: Mixed — Teach (path traversal fix), Delegate (server.ts Result checks, task-plan update)
+Date: 2026-02-15
+Duration: ~45 minutes
+Mode: Coach (tool schema design), Teach (zod-to-json-schema → z.toJSONSchema), Delegate (tool descriptions + hook setup)
 Kill? clean
 
 Agent Reading Protocol

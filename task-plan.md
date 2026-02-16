@@ -579,7 +579,7 @@ Address security, correctness, and robustness findings before wiring error handl
 
 ---
 
-## Task 4A.1: Define tool schemas
+## ✅ Task 4A.1: Define tool schemas
 
 Convert your existing service methods into Anthropic tool definitions.
 
