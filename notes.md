@@ -97,170 +97,15 @@ When a meaningful bug occurs, log:
 - Google Calendar integration — descoped from Phase 3. OCR input unreliable, can't import behind firewall. Revisit if a better input method appears.
 - Telegram bot reads tasks from a board — "what are my tasks for today?" (related: Task 6.2 `/tasks` command)
 - Daily task summary with time context — surface due-today items automatically (related: Task 6.3 daily digest)
+- Comparable projects to review (learning system + automation patterns):
+  - OpenHands AGENTS.md + Skills model — instruction modularity, agent workflow structure (`https://docs.all-hands.dev/modules/usage/prompting/agents-md`, `https://docs.all-hands.dev/modules/usage/prompting/skills`)
+  - Continue prompt files — reusable prompt modules/frontmatter patterns (`https://docs.continue.dev/customize/tutorials/prompt-files`)
+  - n8n Telegram Trigger + Trello node — mature workflow reliability/retry patterns (`https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.telegramtrigger/`, `https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.trello/`)
+  - Obsidian Trello plugin — note/task bridge UX ideas (`https://github.com/nathonius/obsidian-trello`)
+  - Mem0 — AI memory indexing/retrieval patterns (`https://github.com/mem0ai/mem0`)
+  - FSRS4Anki — spaced repetition scheduling approach for quick-check evolution (`https://github.com/open-spaced-repetition/fsrs4anki`)
 
 ---
-
-## Phase 2 Progress
-
-### Task 2.1: ObsidianService scaffold ✅
-- Created ObsidianService with vaultPath constructor
-- getDailyNotePath() — sync, returns path string like `/vault/Daily/2026-02-04.md`
-- appendToDaily() — creates Daily folder if needed, appends content
-- createNote() / readNote() — basic file operations with Result pattern
-- Learned: `fs.mkdir({ recursive: true })` ensures directory exists before write
-
-### Task 2.2: Daily note conventions ✅
-- Created `getDailyTemplate(date)` — returns markdown structure with Captured/Tasks Created/Notes sections
-- Created `formatTime()` — returns "2:47pm" format using `toLocaleTimeString()` with options
-- Rewrote `appendToDaily()` to handle file creation vs insertion:
-  - Uses nested try/catch: inner catches ENOENT (file not found), re-throws other errors
-  - If no file: create from template, insert entry after `## Captured\n`
-  - If file exists: read content, insert entry after `## Captured\n`
-  - Uses `indexOf()` to find marker, `slice()` to split and sandwich new content
-- Learned: `toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })`
-- Learned: `NodeJS.ErrnoException` type cast for accessing `.code` on fs errors
-- Learned: Variable shadowing — `let x` inside inner block creates new variable, doesn't assign to outer
-- Learned: String insertion pattern: `before.slice(0, point) + newStuff + before.slice(point)`
-
-### Task 2.3: Obsidian CLI commands ✅
-- Refactored ConfigService to nested schema structure (trello/obsidian sections)
-- Added `setObsidianVaultPath()` with nested spread pattern
-- Created `notes` subcommand group in CLI with: daily, append, create-note, search-note
-- ObsidianService initialized conditionally based on config
-- Learned: **Nested spread pattern** — `{ ...outer, inner: { ...outer.inner, key: value } }` for immutable nested updates
-- Learned: **Commander subcommand groups** — `program.command('notes')` creates namespace, then chain `.command()` off that
-- Learned: **Optional chaining** — `config.data.obsidian?.defaultVaultPath` returns undefined if obsidian is missing
-- Learned: **Nullish coalescing** — `?? '(not set)'` for fallback when value is null/undefined
-- Learned: **YAGNI lesson** — spent too long debating config architecture for 3-4 keys. Start simple, refactor when it hurts
-
-### Session 2026-02-08
-**Built/Changed:**
-- `obsidian-service.ts` — Made `appendToDaily` resilient when `## Captured` marker missing
-- `obsidian-service.ts` — Implemented `searchNotes()` using grep + child_process
-- `trello.ts` — Added `dateStringSchema` (Zod refine + transform) for date validation
-- `trello-service.ts` — Applied date validation to `createCard` and `setDue` with `safeParse`
-- `index.ts` — Wired `search-note` CLI command with null guard and error handling
-- `task-plan.md` — Descoped Phase 3 (Google Calendar), updated CLAUDE.md pointer
-- `notes.md` — Moved Google Calendar to parking lot
-
-### Task 2.4: Search implementation ✅
-- Implemented `searchNotes()` using grep via `child_process` + `promisify`
-- Wired to CLI as `notes search-note <query>`
-- Handles grep exit codes: 0 = matches, 1 = no matches (not an error), 2 = real error
-- Learned: **`child_process.exec`** — run shell commands from Node.js
-- Learned: **`promisify`** — converts callback-style functions to Promise-style for async/await
-- Learned: **Type guards** — `if (error && typeof error === 'object' && 'code' in error)` proves to TypeScript that a property exists before accessing it
-- Learned: **grep exit codes** — 0 = found, 1 = not found (not an error), 2 = actual error
-
-## Phase 4 Progress
-
-### Task 4.1: Telegram bot setup ✅
-- Created @CtxCapture_bot via BotFather
-- Token stored in `.env`, loaded via `dotenv/config` (same as Trello creds)
-- Added `telegram test` CLI command — hits `/getMe`, prints bot name/username/ID
-- Added `telegram update-test` CLI command — hits `/getUpdates`, dumps raw JSON
-- Sent "Hello world!" from Telegram, retrieved via `getUpdates` — saw `message.text` in response
-- Learned: **Telegram API URL pattern** — `https://api.telegram.org/bot<token>/<method>` (token in URL path, unlike Trello's query params)
-- Learned: **`getUpdates` returns an array** — each element is an update with different types (`my_chat_member`, `message`, etc.)
-- Learned: **Bot vs service architecture** — Trello/Obsidian are destination services (push data to them), Telegram is the entry point/gateway (data comes from it). Different role = different architecture.
-- Learned: **Token security hygiene** — revoke compromised tokens immediately, never paste in chat, store in `.env` with `.gitignore`
-- Learned: **`JSON.stringify(data, null, 2)`** — pretty-print JSON for debugging (null = no replacer, 2 = indent spaces)
-
-**Quick-check candidates for next session:** `??` nullish coalescing, `console.error()` vs `console.log()`
-
-### Hardening session
-- Added Zod `dateStringSchema` with `.refine()` + `.transform()` for date validation in `createCard` and `setDue`
-- Learned: **Zod `.refine()`** — custom validation, returns true/false
-- Learned: **Zod `.transform()`** — converts value after validation passes. Order matters: validate before transform
-- Learned: **Zod `.safeParse()`** — returns `{ success, data }` or `{ success, error }` without throwing
-- Made Obsidian `appendToDaily` resilient if `## Captured` marker is missing — appends marker + entry at end of file
-- Learned: **`indexOf()` returns -1** when substring not found (not undefined)
-- Descoped Phase 3 (Google Calendar) — moved to parking lot
-
-### Session 2026-02-11
-**Built/Changed:**
-- `src/gateway/server.ts` — NEW. Express server with POST `/webhook` route. Receives Telegram updates, extracts message text, logs with timestamp, returns 200 OK.
-- Installed `express` + `@types/express`
-- Installed ngrok for local webhook testing
-- Registered Telegram webhook via `setWebhook` API call
-
-**Quick-check:** `?.` optional chaining — passed, graduated to Concepts Solidified. Correctly explained placement (`update.message?.text` guards `message`, not `update`).
-
-**Quick-check candidates for next session:** `??` nullish coalescing, `console.error()` vs `console.log()`, Express route handlers
-
-### Session 2026-02-12
-**Built/Changed:**
-- `src/gateway/parser.ts` — NEW. `parseMessage()` function calls Claude Haiku to classify text as task/note/unknown, extracts content and due dates. Zod validates response. `stripCodeBlock()` helper cleans markdown fences from LLM output.
-- `src/index.ts` — Added `parser test` throwaway CLI command for testing
-- Installed `@anthropic-ai/sdk`
-- Added `ANTHROPIC_API_KEY` to `.env`
-- Updated parking lot with board reading and daily summary ideas
-
-**Bugs hit:**
-1. Claude wrapped JSON in markdown code blocks → `JSON.parse()` failed. Fixed with `stripCodeBlock()`.
-2. Claude returned `"dueDate": null` → Zod `.optional()` only allows undefined, not null. Fixed by adding `.nullable()`.
-
-**Quick-check candidates for next session:** `z.enum()`, `slice()` with negative indices, `let` outside try / assign inside try scoping pattern, Result pattern flow
-
-### Session 2026-02-13
-**Built/Changed:**
-- `src/gateway/server.ts` — Expanded `TelegramUpdate` interface with `chat.id: number`. Added `sendReply()` function: plain `fetch` POST to Telegram `sendMessage` API, logs failures, returns `void`.
-- Task 4.4 in progress — steps 1-2 of 5 complete (interface + sendReply). Steps 3-5 remain (handleMessage, wire webhook, initialize services).
-
-**Learned:**
-- **When to skip Zod** — if you're not going to *use* the response data, don't validate it. Zod is for untrusted data you read from, not fire-and-forget calls.
-- **camelCase vs snake_case mapping** — TypeScript variables use camelCase (`chatId`), but JSON keys sent to external APIs must match their spec (`chat_id` for Telegram).
-- **Fire-and-forget pattern** — when a failure can't be recovered from (reply failed, can't reply to say reply failed), log it and move on. `console.error` + `return`, not `Result<T>`.
-- **Data flow direction matters** — `sendReply` sends *to* Telegram, doesn't consume the response. Different from Trello calls where you use the returned card data.
-
-**Quick-check:** Result pattern flow — partial. Described internal gates of a single Result-returning function correctly. Missed the chaining pattern (check first result, bail if bad, proceed to next call). Stays in "Still Working Through."
-
-**Quick-check candidates for next session:** Result pattern chaining (hands-on in handleMessage), `z.enum()`, Express async route handlers
-
-### Session 2026-02-14
-**Built/Changed:**
-- `src/gateway/server.ts` — Completed Task 4.4: full end-to-end wiring. Added `handleMessage()` with Result-based routing (parse → switch on type → TrelloService/ObsidianService → reply). Fixed import order bug (dotenv must load before parser). Fixed two TypeScript type errors. Cleaned up stale TODO and typo. Live tested: Telegram → Claude parse → Trello card → bot reply.
-- Config: set `trello.defaultInboxListId` in `~/.ctx/config.json` for live testing.
-
-**Learned:**
-- **Import order matters with side effects** — `import 'dotenv/config'` must come before any module that reads `process.env` at load time. Parser creates Anthropic client at import time, so if dotenv hasn't run yet, the API key is `undefined`. Silent failure — no error, just empty credentials.
-- **Module-level narrowing doesn't carry into functions** — TypeScript narrows `trellodefaultlist` after `process.exit(1)` guard at module level, but inside `handleMessage()` it reverts to `string | undefined`. Fix: non-null assertion `!`.
-- **`??` nullish coalescing bridges null vs undefined** — Parser's `dueDate` is `string | null | undefined` (from Zod `.nullable().optional()`), but `createCard` expects `string | undefined`. Fix: `safeData.dueDate ?? undefined` converts null to undefined.
-- **Hidden TypeScript errors** — when one function argument fails type checking, subsequent argument errors may be hidden until the first is fixed.
-- **Unchecked Result values** — `createCard` returns a Result but `handleMessage` doesn't check it. Card creation can fail silently while the bot replies "success". (Tracked for Task 4.5.)
-- **`tsc` vs `tsc --noEmit`** — `tsc` emits .js files (build), `tsc --noEmit` only checks types (typecheck). Use `npm run typecheck` not raw `tsc`.
-- **502 Bad Gateway from ngrok** — means ngrok is running but nothing is listening on localhost:3000. Server was stopped.
-- **`source .env` vs dotenv** — `.env` is for Node's dotenv, not the shell. `source` may include quotes from the file format.
-
-**Bugs hit:**
-1. Import order: dotenv loaded after parser → Anthropic client created with undefined API key → all parsing fails with "cactus" reply. Fixed by moving `import 'dotenv/config'` to line 1.
-2. Trello card not created despite success reply — `"thursday"` not a valid Trello date. `createCard` Result not checked. (Task 4.4a-7 + 4.5.)
-
-**Quick-check candidates for next session:** `z.enum()`, Express async route handlers, Result return value checking
-
-### Session 2026-02-14 (session 2) — Task 4.4a Hardening
-**Built/Changed:**
-- `src/gateway/server.ts` — Webhook auth: checks `X-Telegram-Bot-Api-Secret-Token` header, returns 401 on mismatch. Startup guards for all env vars (`TELEGRAM_WEBHOOK_SECRET`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`). Removed `!` non-null assertions. Removed dead runtime check in `sendReply`.
-- `src/services/obsidian-service.ts` — `safePath()` private helper: resolves path with `path.resolve()`, blocks if result escapes vault. `buildDate()` private helper: local timezone date string. Both `createNote` and `readNote` use `safePath`. Both `getDailyNotePath` and `appendToDaily` use `buildDate`.
-- `src/gateway/parser.ts` — `SYSTEM_PROMPT` constant → `buildSystemPrompt()` function. Injects today's local date. Instructs Haiku to return YYYY-MM-DD instead of "thursday".
-- `src/utils/request.ts` — `response.json()` wrapped in try/catch, returns `PARSE_ERROR` Result on failure.
-- `src/services/config-service.ts` — `readFileSync` moved inside try/catch block.
-- `src/types/trello.ts` — `LabelSchema.color` now `.nullable()`.
-
-**Learned:**
-- **Webhook authentication** — Telegram sends `X-Telegram-Bot-Api-Secret-Token` header when you register with `secret_token` param. Server verifies header matches, rejects 401 otherwise. Both sides need the secret.
-- **`req.headers` is an object, not a function** — access with bracket notation `req.headers['header-name']`, not parentheses. Dashes in header names require brackets (can't use dot notation).
-- **`return` after `res.sendStatus()`** — without it, Express keeps executing and tries to send a second response, throwing "headers already sent" error.
-- **`===` vs `==`** — strict equality is TypeScript convention, avoids type coercion edge cases.
-- **Path traversal attack** — user input like `../../etc/passwd` in a file path escapes the intended directory. `path.resolve()` normalizes it, then `startsWith()` checks containment.
-- **Private helper methods** — `private` means only callable inside the class. Good for internal safety checks not part of the public API.
-- **UTC vs local time** — `toISOString()` always returns UTC. At 11pm Eastern, UTC is already tomorrow. Use `getFullYear()`/`getMonth()`/`getDate()` for local time. `getMonth()` is zero-indexed.
-- **`padStart(2, '0')`** — turns `9` into `09` for consistent date formatting.
-- **Fail-fast startup** — validate all required config before creating services. Crash with clear message instead of mysterious failures later. Once validated, `!` assertions are unnecessary.
-- **Dead code removal** — if startup guarantees a value exists, per-call checks for that value are dead code.
-- **`.nullable()` vs `.optional()` in Zod** — `.nullable()` accepts `null` (field present, value null). `.optional()` accepts `undefined` (field missing). Different things.
-
-**Quick-check candidates for next session:** `path.resolve()` behavior, webhook auth flow, `getMonth()` zero-indexing
 
 ## Phase 4A Progress
 
@@ -285,3 +130,25 @@ When a meaningful bug occurs, log:
 - **Claude Code hooks** — `PreToolUse` with prompt type can enforce workflow gates. Exit 2 blocks, stderr feeds back to Claude. Prompt hooks use a small model to evaluate conditions intelligently.
 
 **Quick-check candidates for next session:** `z.toJSONSchema()` output shape, tool description writing, Anthropic tool use API message format
+
+### Session 2026-02-16 — Task 4A.2: Build the agent loop
+**Built/Changed:**
+- `src/agent/agent.ts` — NEW. Agent loop with `runAgent(userMessage)` returning `Result<string>`. While loop calls Haiku with tools, accumulates messages, branches on `stop_reason`. Executor is a stub (4A.3).
+- `src/agent/tools.ts` — Added `Anthropic.Tool[]` typing and `as Anthropic.Tool.InputSchema` casts on all 10 tools. Bridges Zod v4 JSON Schema output with Anthropic SDK types.
+
+**Design decisions:**
+- `Result<string>` return type (not plain string) — consistent with rest of codebase, three error paths (NETWORK_ERROR, AGENT_ERROR, AGENT_LOOP_LIMIT)
+- System prompt rewritten for tool use — no JSON examples, no classifier language. Tool definitions serve as the schema.
+- Model extracted to `const model` — single line change to swap
+- `executeTool()` stub uses `Promise.resolve()` without `async` — satisfies `require-await` lint rule
+
+**Learned:**
+- **Agent loop pattern** — while loop, not single call. Each iteration: call Haiku → push assistant response → check stop_reason → if tool_use, execute tools, push results, continue. If end_turn, extract text, return.
+- **Message accumulation** — conversation state grows each iteration. Assistant response (including tool_use blocks) AND tool results both get pushed. Haiku sees full history on next call.
+- **`tool_result` uses `role: 'user'`** — Anthropic protocol. Tool results are sent as user messages, not a special role. `tool_use_id` ties each result to its request.
+- **`response.content` is an array of blocks** — can contain `text` and `tool_use` blocks mixed. Filter by `.type` to extract what you need.
+- **Bridging library types with casts** — `z.toJSONSchema()` returns generic JSON Schema, Anthropic SDK expects `{ type: 'object' }` literal. Cast with `as Anthropic.Tool.InputSchema`. One-time cost per tool.
+- **`Promise.resolve()` vs `async`** — returning `Promise.resolve(value)` makes a function return a Promise without `async`. Useful for stubs where the real implementation will be async.
+- **`setTimeout` returns `Timeout`, not a value** — can't await it for a string result. Not a Promise.
+
+**Quick-check candidates for next session:** message accumulation flow (what gets pushed when), `stop_reason` values, `tool_use_id` purpose, `Result<string>` error codes in agent

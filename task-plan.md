@@ -635,7 +635,7 @@ const tools = [
 
 ---
 
-## Task 4A.2: Build the agent loop
+## ✅ Task 4A.2: Build the agent loop
 
 Replace `parser.ts` with `agent.ts`. This is the core change.
 
@@ -1087,6 +1087,43 @@ Defensive fixes identified during cross-AI audit (Claude + ChatGPT).
 
 ---
 
+### Task 6.7: Break up index.ts into service command modules
+
+`index.ts` has grown to handle CLI commands for every service (Trello, Obsidian, Telegram, notes, config). Split into discrete command modules per service.
+
+- [ ] **6.7-1:** Create `src/commands/trello.ts` — move all Trello CLI commands
+- [ ] **6.7-2:** Create `src/commands/notes.ts` — move all Obsidian/notes CLI commands
+- [ ] **6.7-3:** Create `src/commands/telegram.ts` — move all Telegram CLI commands
+- [ ] **6.7-4:** Create `src/commands/config.ts` — move config subcommands
+- [ ] **6.7-5:** Slim `index.ts` to just Commander setup + imports from command modules
+
+**Done when:**
+- Each service's commands live in their own file
+- `index.ts` is a thin shell that registers command modules
+- All existing CLI commands still work identically
+
+**Time estimate:** 2-3 hours
+
+---
+
+### Task 6.8: Morning briefing — tasks due today and this week
+
+Scheduled message (cron or Telegram command) that surfaces what's due.
+
+- [ ] **6.8-1:** Add `getCards` filter for due dates (today + next 7 days) via Trello API `due` filter or client-side filtering
+- [ ] **6.8-2:** Format briefing message — group by "Due Today" and "Coming Up This Week", sorted by date
+- [ ] **6.8-3:** Wire to scheduled trigger (cron job or `/morning` Telegram command — pick one to start)
+- [ ] **6.8-4:** Send briefing to Telegram chat
+
+**Done when:**
+- Morning message lists all cards due today and within the next 7 days
+- Cards grouped and sorted by due date
+- Delivered to Telegram automatically or on demand
+
+**Time estimate:** 2-3 hours
+
+---
+
 ### ~~Task 6.4: Batch processing~~ (REPLACED)
 
 **Replaced by** agent making multiple tool calls per message.
@@ -1243,6 +1280,25 @@ Monday morning, your Apple Calendar already has the week loaded.
 # Appendix A: Future Enhancements
 
 These were in the original task plan but cut to focus on the core problem. They're not abandoned — just deferred until the basics work. Reference material for when you're ready.
+
+---
+
+## External Project References (Future Review)
+
+- OpenHands AGENTS.md + Skills model — instruction modularity and agent workflow structure:
+  - `https://docs.all-hands.dev/modules/usage/prompting/agents-md`
+  - `https://docs.all-hands.dev/modules/usage/prompting/skills`
+- Continue prompt files — reusable prompt modules/frontmatter patterns:
+  - `https://docs.continue.dev/customize/tutorials/prompt-files`
+- n8n Telegram Trigger + Trello node — mature workflow reliability/retry patterns:
+  - `https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.telegramtrigger/`
+  - `https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.trello/`
+- Obsidian Trello plugin — note/task bridge UX ideas:
+  - `https://github.com/nathonius/obsidian-trello`
+- Mem0 — AI memory indexing/retrieval patterns:
+  - `https://github.com/mem0ai/mem0`
+- FSRS4Anki — spaced repetition scheduling approach for quick-check evolution:
+  - `https://github.com/open-spaced-repetition/fsrs4anki`
 
 ---
 
