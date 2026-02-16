@@ -1,3 +1,4 @@
+import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
 export const CreateTaskInput = z.object({
@@ -35,65 +36,65 @@ export const SearchNotesInput = z.object({
   query_text: z.string(),
 });
 
-export const tools = [
+export const tools: Anthropic.Tool[] = [
   {
     name: 'create_task',
     description:
       'Create a new task as a Trello card. Use when the user mentions something actionable that needs tracking. Clean up informal input into a clear task title. Resolves to the default inbox list unless a specific list_id is provided.',
-    input_schema: z.toJSONSchema(CreateTaskInput),
+    input_schema: z.toJSONSchema(CreateTaskInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'get_boards',
     description:
       'List all Trello boards the user has access to. Use when the user asks about their boards or you need to find a board ID.',
-    input_schema: z.toJSONSchema(GetBoardsInput),
+    input_schema: z.toJSONSchema(GetBoardsInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'get_lists',
     description:
       'List all lists on a Trello board. Use when the user asks what lists exist on a board, or when you need a list ID to move or create cards.',
-    input_schema: z.toJSONSchema(GetListsInput),
+    input_schema: z.toJSONSchema(GetListsInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'get_cards',
     description:
       'List all cards on a Trello list. Use when the user asks what tasks are on a list, wants to review their inbox, or you need a card ID for another operation.',
-    input_schema: z.toJSONSchema(GetCardsInput),
+    input_schema: z.toJSONSchema(GetCardsInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'move_card',
     description:
       'Move a Trello card to a different list. Use when the user wants to organize, sort, or reclassify a task. Requires the card ID and the target list ID.',
-    input_schema: z.toJSONSchema(MoveCardInput),
+    input_schema: z.toJSONSchema(MoveCardInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'archive_card',
     description:
       'Archive a Trello card. Use when the user wants to remove or complete a task. This is destructive — the card is hidden from the board.',
-    input_schema: z.toJSONSchema(ArchiveCardInput),
+    input_schema: z.toJSONSchema(ArchiveCardInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'set_due_date',
     description:
       'Set or update the due date on a Trello card. Use when the user mentions a deadline for an existing task. The due_date should be an ISO 8601 date string (YYYY-MM-DD).',
-    input_schema: z.toJSONSchema(SetDueDateInput),
+    input_schema: z.toJSONSchema(SetDueDateInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'append_note',
     description:
       "Append a timestamped entry to today's daily note in Obsidian. Use when the user shares something informational that doesn't need to be a task — observations, reminders, context, meeting notes.",
-    input_schema: z.toJSONSchema(AppendNoteInput),
+    input_schema: z.toJSONSchema(AppendNoteInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'search_notes',
     description:
       'Search the Obsidian vault for a keyword or phrase. Use when the user asks about past notes or wants to find something they previously captured.',
-    input_schema: z.toJSONSchema(SearchNotesInput),
+    input_schema: z.toJSONSchema(SearchNotesInput) as Anthropic.Tool.InputSchema,
   },
   {
     name: 'read_daily',
     description:
       "Read today's daily note from Obsidian. Use when the user asks what they've captured today or wants to review their daily note.",
-    input_schema: z.toJSONSchema(ReadDailyInput),
+    input_schema: z.toJSONSchema(ReadDailyInput) as Anthropic.Tool.InputSchema,
   },
 ];
