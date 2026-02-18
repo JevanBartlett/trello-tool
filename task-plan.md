@@ -732,7 +732,7 @@ This is the exact same pattern as Scott's `run.ts` — the `while(true)` with `m
 
 ---
 
-## Task 4A.3: Wire the executor
+## ✅ Task 4A.3: Wire the executor
 
 Create the function that takes a tool name + arguments and calls the right service.
 
@@ -765,6 +765,8 @@ async function executeTool(
 - The executor is called from the agent loop in 4A.2
 
 **Time estimate:** 1-1.5 hours
+
+**Completed:** Created `src/agent/executor.ts` with factory pattern `createExecutor(deps)` returning `executeTool` function. 10 cases matching all tools in tools.ts. Each case: safeParse input with Zod schema → call service → unwrap Result into string. Updated `runAgent()` signature to accept `executeTool` as parameter (dependency injection via function arg). Removed stub from agent.ts.
 
 ---
 

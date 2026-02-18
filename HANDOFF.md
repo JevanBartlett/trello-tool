@@ -5,23 +5,21 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4A / Task 4A.2: Build the agent loop
+Phase / Task: Phase 4A / Task 4A.3: Wire the executor
 Status: COMPLETE
 
 Progress
-Task 4A.2 complete. Created `src/agent/agent.ts` with:
-- `runAgent(userMessage)` — full agent loop with `Result<string>` return type
-- While loop with `MAX_ITERATIONS` (10) safety cap
-- Three stop conditions: `end_turn` (success), `tool_use` (loop), unexpected (error)
-- Message accumulation pattern: assistant response + tool results pushed each iteration
-- Token tracking (input + output) summed across all iterations
-- `executeTool()` stub — returns placeholder string, replaced in 4A.3
-- System prompt rewritten for tool use (no more JSON classifier or examples)
+Task 4A.3 complete. Created `src/agent/executor.ts` with:
+- `createExecutor(deps)` factory function — takes `ExecutorDeps` (trello, obsidian, defaultListId), returns `executeTool` function via closure
+- 10 switch cases matching all tools in `tools.ts`
+- Each case: safeParse input with Zod schema → call service method → unwrap `Result<T>` into string for Haiku
+- `read_daily` skips safeParse (empty input schema) — uses `getDailyNotePath()` directly
+- Error strings prefixed with `PARSING_ERROR:` or `SERVICE_ERROR:` so Haiku can interpret failures
 
 Also this session:
-- Added `Anthropic.Tool[]` typing to tools array in `tools.ts`
-- Cast each `input_schema` with `as Anthropic.Tool.InputSchema` to bridge Zod v4 ↔ Anthropic SDK types
-- Model extracted to constant (`const model = 'claude-haiku-4-5-20251001'`)
+- Removed `executeTool` stub from `agent.ts`
+- `runAgent()` now takes `executeTool` as second parameter (dependency injection — agent loop doesn't import services)
+- Graduated 5 concepts from "Still Working Through" to "Concepts Solidified"
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -46,12 +44,16 @@ Decisions Made
 - `runAgent()` returns `Result<string>` not plain `string` — consistent error handling with rest of codebase
 - `Anthropic.Tool.InputSchema` cast on each tool's `input_schema` — bridges Zod's generic JSON Schema type with SDK's literal `type: 'object'` requirement
 - Agent system prompt has no examples — tool definitions serve as the schema, not prompt-engineered JSON examples
-- `executeTool()` stub is non-async with `Promise.resolve()` — satisfies `require-await` lint rule, becomes async when real service calls added in 4A.3
 - Model extracted to `const model` — single line change to swap models
+- Factory function `createExecutor(deps)` — captures services via closure, returns `executeTool`. Agent loop receives function as parameter, no service imports needed.
+- `ExecutorDeps` interface — explicit dependency declaration (trello, obsidian, defaultListId). No hidden env reads in executor.
+- `read_daily` skips safeParse — empty input schema, nothing to validate
+- `runAgent` takes `executeTool` as second parameter — dependency injection via function arg, not imports or globals
 
 Files in Play
-- `src/agent/agent.ts` — Agent loop: runAgent(), buildSystemPrompt(), executeTool() stub
-- `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions array (now typed as Anthropic.Tool[])
+- `src/agent/executor.ts` — NEW. Factory function, 10 tool cases, Zod validation, Result unwrapping
+- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), buildSystemPrompt(). Stub removed.
+- `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions array (typed as Anthropic.Tool[])
 - `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing, Result-checked writes
 - `src/gateway/parser.ts` — `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format (will be replaced by agent in 4A.4)
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
@@ -63,11 +65,11 @@ Files in Play
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Task 4A.3: Wire the executor. Replace `executeTool()` stub with real service calls — switch on tool name, validate input with Zod schemas, call TrelloService/ObsidianService, unwrap Result into string for Haiku. Then 4A.4: swap `handleMessage()` in server.ts to call `runAgent()` instead of `parseMessage()` + switch.
+Task 4A.4: Update the gateway. Replace `handleMessage()` in server.ts to call `runAgent()` instead of `parseMessage()` + switch. Need to: import `createExecutor` and `runAgent`, create executor with deps (trello, obsidian, defaultListId), pass resulting function to `runAgent()`. Small task — mostly wiring.
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
-2. `executeTool()` still has `async` keyword despite using `Promise.resolve()` — prettier/linter left it; harmless but technically redundant
+2. `getDailyNotePath()` returns absolute path, `readNote()` runs it through `safePath()` — works because absolute path starts with vaultPath, but coupling is fragile
 
 Blockers
 None.
@@ -78,15 +80,19 @@ Failed Approaches
 - `zod-to-json-schema` library — incompatible with Zod v4. Switched to native `z.toJSONSchema()`.
 - Tried typing `GetBoardsInput: Anthropic.Tool = z.object({})` — mixed Zod schema with Anthropic tool type. Fix: type annotations go on the `tools` array and `input_schema` casts, not on individual Zod schemas.
 - `setTimeout` in executeTool stub — returns `Timeout` object not string, wrong callback syntax, unnecessary complexity for a placeholder.
+- `create-task` (hyphen) instead of `create_task` (underscore) in executor switch — tool names must match tools.ts exactly.
+- `search_note` (singular) instead of `search_notes` (plural) — same issue, exact match required.
+- `parsed.data.string` on `read_daily` — ReadDailyInput is empty object, no fields. Use `getDailyNotePath()` instead.
+- Tried `Result<ExecutorDeps>` as return type of `createExecutor` — factory isn't async, doesn't do I/O, just returns a function.
 
 This Week's Pattern
-Agent loop architecture — message accumulation, tool_use/end_turn branching, Result-based error paths. The loop is a conversation: push assistant response, push tool results, call again. Each iteration Haiku sees full history and decides next action.
+Executor pattern — factory function that captures dependencies via closure and returns a tool dispatch function. The agent loop calls the function without knowing about services. Each tool case: validate input → call service → unwrap Result → return string.
 
 Last Session
 
-Date: 2026-02-16
+Date: 2026-02-17
 Duration: ~45 minutes
-Mode: Teach (agent loop pattern, message accumulation, tool_use protocol), Delegate (tools.ts type casts)
+Mode: Teach (factory functions, executor pattern, function type syntax)
 Kill? clean
 
 Agent Reading Protocol

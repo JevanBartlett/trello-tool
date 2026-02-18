@@ -59,7 +59,7 @@ Detailed protocols available as slash commands:
 
 - `/session-start` — Start of session checklist
 - `/session-end` — End of session checklist, HANDOFF update, graduation
-- `/quick-check` — Concept quiz from "Still Working Through"
+- `/quick-check` — 5-10 min concept drill from "Still Working Through"
 - `/coaching` — Learning protocols, operating mode details
 - `/phase-review` — Phase completion review, exam mode, concept audit
 

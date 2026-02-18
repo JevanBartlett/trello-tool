@@ -30,11 +30,10 @@ Today is ${today}.
 Always confirm what you did in a brief, friendly reply.`;
 }
 
-async function executeTool(name: string, input: Record<string, unknown>): Promise<string> {
-  return Promise.resolve(`[stub] called ${name} with ${JSON.stringify(input)}`);
-}
-
-export async function runAgent(userMessage: string): Promise<Result<string>> {
+export async function runAgent(
+  userMessage: string,
+  executeTool: (name: string, input: Record<string, unknown>) => Promise<string>,
+): Promise<Result<string>> {
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }];
 
   let iterations: number = 0;

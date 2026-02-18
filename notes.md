@@ -17,6 +17,11 @@
 - `path.dirname()` — extracts directory portion from a full file path
 - `fs.mkdir({ recursive: true })` — creates directory safely (no error if exists, creates parents)
 - `?.` optional chaining — short-circuits to undefined when left side is null/undefined. Placement matters: `obj.prop?.nested` guards `prop`, not `obj`
+- Error re-throwing — why `throw error` in catch blocks, how errors propagate [graduated: P4A]
+- Custom error classes — `extends Error`, public constructor params, calling `super()` [graduated: P4A]
+- `instanceof` for type-checking — how it works with class hierarchies [graduated: P4A]
+- Separation of concerns — API module throws structured errors, CLI formats for user [graduated: P4A]
+- Commander `.option()` — options come as object in last callback parameter [graduated: P4A]
 
 ## Still Working Through
 
@@ -30,12 +35,9 @@
 - Variable shadowing — `let x` in inner block vs assigning to outer `x` [added: P2]
 - Variable scoping in if blocks — `const` inside `if` isn't accessible outside it [added: P2]
 - Type guards — proving to TypeScript that a property exists before accessing it [added: P2]
+- Deriving TypeScript generics — read and write all utility types (`Record`, `Partial`, `Pick`, `Omit`, `ReturnType`, `Parameters`, etc.) plus custom generics. Drill one per session until automatic [added: P4A]
 
 ### Error Handling
-- Error re-throwing — why `throw error` in catch blocks, how errors propagate [added: P1]
-- Custom error classes — `extends Error`, public constructor params, calling `super()` [added: P1]
-- Error handling architecture — where to throw (API layer) vs where to catch (CLI layer) [added: P1]
-- `instanceof` for type-checking — how it works with class hierarchies [added: P1]
 - ENOENT pattern — `(error as NodeJS.ErrnoException).code` for file system errors [added: P2]
 - Nested try/catch — inner catches specific error, re-throws others to outer handler [added: P2]
 
@@ -74,8 +76,6 @@
 - `z.enum()` — restricts a string to specific allowed values. `z.enum(['task', 'note', 'unknown'])` rejects anything else [added: P4]
 
 ### Patterns / Architecture
-- Separation of concerns — API module throws structured errors, CLI formats for user [added: P1]
-- Commander `.option()` — options come as object in last callback parameter [added: P1]
 - Zod `.refine()` / `.transform()` / `.safeParse()` — custom validation, value conversion, safe parsing [added: P2]
 - Architectural thinking — services (destinations) vs gateway (entry point), which component owns which responsibility [added: P4]
 - Result pattern flow — try something risky → fail early with error → keep going → return success at the end. Each step is a gate [added: P4]
@@ -152,3 +152,24 @@ When a meaningful bug occurs, log:
 - **`setTimeout` returns `Timeout`, not a value** — can't await it for a string result. Not a Promise.
 
 **Quick-check candidates for next session:** message accumulation flow (what gets pushed when), `stop_reason` values, `tool_use_id` purpose, `Result<string>` error codes in agent
+
+### Session 2026-02-17 — Task 4A.3: Wire the executor
+**Built/Changed:**
+- `src/agent/executor.ts` — NEW. Factory function `createExecutor(deps)` returns `executeTool` function. 10 switch cases covering all tools. Each case: safeParse input → call service → unwrap Result into string for Haiku.
+- `src/agent/agent.ts` — Removed `executeTool` stub. `runAgent()` now takes `executeTool` as second parameter (dependency injection).
+
+**Design decisions:**
+- Factory function pattern — `createExecutor(deps)` captures services via closure, returns the `executeTool` function. Agent loop doesn't import services directly.
+- `ExecutorDeps` interface — explicit dependency declaration: `trello`, `obsidian`, `defaultListId`. No hidden env reads.
+- `read_daily` skips safeParse — `ReadDailyInput` is empty object, nothing to validate. Gets path from `deps.obsidian.getDailyNotePath()` directly.
+- Tool name strings must match `tools.ts` exactly — caught `create-task` vs `create_task` and `search_note` vs `search_notes` mismatches.
+
+**Learned:**
+- **Factory functions** — function that returns a function. Outer function receives dependencies, inner function (returned) uses them via closure. Caller gets a ready-to-use function without knowing about the dependencies. Pattern: `const fn = createThing(deps)` → `fn(args)`.
+- **Function type syntax** — `(name: string, input: Record<string, unknown>) => Promise<string>` as a return type annotation. The whole thing goes after the `:` in the function signature.
+- **`.map()` + `.join()`** — `.map()` transforms each array element, `.join('\n')` combines the resulting array into a single string. Two separate operations chained.
+- **Case block scoping** — `{ }` after `case` creates block scope so `const` declarations don't collide between cases.
+
+**Drilled:** message accumulation flow → PARTIAL (knew user/assistant push, missed tool_result shape and tool_use_id linkage)
+
+**Quick-check candidates for next session:** factory functions (write one from scratch), tool_result message shape, `getDailyNotePath()` absolute vs relative path interaction with safePath
