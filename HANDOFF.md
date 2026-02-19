@@ -5,21 +5,18 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4A / Task 4A.3: Wire the executor
+Phase / Task: Phase 4A / Task 4A.4: Update the gateway
 Status: COMPLETE
 
 Progress
-Task 4A.3 complete. Created `src/agent/executor.ts` with:
-- `createExecutor(deps)` factory function — takes `ExecutorDeps` (trello, obsidian, defaultListId), returns `executeTool` function via closure
-- 10 switch cases matching all tools in `tools.ts`
-- Each case: safeParse input with Zod schema → call service method → unwrap `Result<T>` into string for Haiku
-- `read_daily` skips safeParse (empty input schema) — uses `getDailyNotePath()` directly
-- Error strings prefixed with `PARSING_ERROR:` or `SERVICE_ERROR:` so Haiku can interpret failures
-
-Also this session:
-- Removed `executeTool` stub from `agent.ts`
-- `runAgent()` now takes `executeTool` as second parameter (dependency injection — agent loop doesn't import services)
-- Graduated 5 concepts from "Still Working Through" to "Concepts Solidified"
+Task 4A.4 complete. Replaced `handleMessage()` in `server.ts`:
+- Removed `parseMessage()` + switch dispatch entirely
+- Now calls `runAgent(text, executeTool)` → `sendReply(chatID, result.data)`
+- Executor created at module level via `createExecutor(deps)` — deps don't change between messages
+- Removed unused imports: `ParsedMessage`, `Result`
+- Return type simplified to `Promise<void>` — `handleMessage` sends the reply itself
+- Live tested via Telegram: task with due date, note append, and multi-tool call (task + note in one turn) all working
+- Token usage jumped from ~255 (old parser) to ~3900 (agent with 10 tool definitions) — expected
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -49,13 +46,15 @@ Decisions Made
 - `ExecutorDeps` interface — explicit dependency declaration (trello, obsidian, defaultListId). No hidden env reads in executor.
 - `read_daily` skips safeParse — empty input schema, nothing to validate
 - `runAgent` takes `executeTool` as second parameter — dependency injection via function arg, not imports or globals
+- Executor at module level in server.ts — deps are stable, create once at startup not per-request
+- `handleMessage` returns `void` — nobody inspects the return value, it sends the reply itself
 
 Files in Play
-- `src/agent/executor.ts` — NEW. Factory function, 10 tool cases, Zod validation, Result unwrapping
+- `src/gateway/server.ts` — Webhook auth guard, startup env validation, module-level executor creation, handleMessage calls runAgent + sendReply
+- `src/gateway/parser.ts` — RETIRED. `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format. Replaced by agent in 4A.4, kept for reference.
+- `src/agent/executor.ts` — Factory function, 10 tool cases, Zod validation, Result unwrapping
 - `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), buildSystemPrompt(). Stub removed.
 - `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions array (typed as Anthropic.Tool[])
-- `src/gateway/server.ts` — Webhook auth guard, startup env validation, handleMessage routing, Result-checked writes
-- `src/gateway/parser.ts` — `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format (will be replaced by agent in 4A.4)
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
 - `src/services/config-service.ts` — `readFileSync` inside try/catch
 - `src/utils/request.ts` — `response.json()` try/catch for non-JSON responses
@@ -65,11 +64,12 @@ Files in Play
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Task 4A.4: Update the gateway. Replace `handleMessage()` in server.ts to call `runAgent()` instead of `parseMessage()` + switch. Need to: import `createExecutor` and `runAgent`, create executor with deps (trello, obsidian, defaultListId), pass resulting function to `runAgent()`. Small task — mostly wiring.
+Task 4A.5: Human-in-the-loop for destructive operations. Add confirmation prompts before `archive_card` and `move_card` execute. Two options: simple (tag tools as `requiresApproval`, check in executor) or state-based (pending approvals Map keyed by chat ID). Start simple.
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
 2. `getDailyNotePath()` returns absolute path, `readNote()` runs it through `safePath()` — works because absolute path starts with vaultPath, but coupling is fragile
+3. `parser.ts` still exists but is no longer called — kept for reference, could delete
 
 Blockers
 None.
@@ -84,15 +84,16 @@ Failed Approaches
 - `search_note` (singular) instead of `search_notes` (plural) — same issue, exact match required.
 - `parsed.data.string` on `read_daily` — ReadDailyInput is empty object, no fields. Use `getDailyNotePath()` instead.
 - Tried `Result<ExecutorDeps>` as return type of `createExecutor` — factory isn't async, doesn't do I/O, just returns a function.
+- First attempt at handleMessage return type: `Promise<Result<ParsedMessage>>` — but nobody uses the return value, and ParsedMessage no longer exists in the flow. Simplified to `Promise<void>`.
 
 This Week's Pattern
-Executor pattern — factory function that captures dependencies via closure and returns a tool dispatch function. The agent loop calls the function without knowing about services. Each tool case: validate input → call service → unwrap Result → return string.
+Gateway simplification — entire routing layer (parser + switch + service calls) collapses into one `runAgent()` call. The LLM decides what to do, the executor calls services, the gateway just hands off text and sends the reply.
 
 Last Session
 
-Date: 2026-02-17
-Duration: ~45 minutes
-Mode: Teach (factory functions, executor pattern, function type syntax)
+Date: 2026-02-18
+Duration: ~30 minutes
+Mode: Coach (gateway wiring), Teach (factory function syntax during quick-check)
 Kill? clean
 
 Agent Reading Protocol

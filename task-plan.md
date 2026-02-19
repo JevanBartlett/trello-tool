@@ -770,7 +770,7 @@ async function executeTool(
 
 ---
 
-## Task 4A.4: Update the gateway
+## ✅ Task 4A.4: Update the gateway
 
 Replace the classifier dispatch in `server.ts` with the agent.
 
@@ -802,6 +802,8 @@ That's it. The entire routing logic collapses into one function call.
 - Old `parser.ts` is either deleted or kept for reference (your call)
 
 **Time estimate:** 30 minutes
+
+**Completed:** Replaced `handleMessage()` in `server.ts`. Removed `parseMessage()` + switch dispatch entirely. Now calls `runAgent(text, executeTool)` → `sendReply()`. Executor created at module level (deps don't change between messages). Removed `ParsedMessage` and `Result` imports. Live tested via Telegram: task creation with resolved due date, note append, and multi-tool call (task + note in single turn) all working. Return type simplified to `Promise<void>` — `handleMessage` sends the reply itself instead of returning a Result.
 
 ---
 

@@ -1,11 +1,10 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
-import type { ParsedMessage } from '../gateway/parser.js';
-import { parseMessage } from '../gateway/parser.js';
+import { runAgent } from '../agent/agent.js';
+import { createExecutor, type ExecutorDeps } from '../agent/executor.js';
 import { ConfigService } from '../services/config-service.js';
 import { ObsidianService } from '../services/obsidian-service.js';
 import { TrelloService } from '../services/trello-service.js';
-import type { Result } from '../types/result.js';
 
 interface TelegramUpdate {
   message?: {
@@ -52,6 +51,13 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 
 const trello = new TrelloService(process.env.TRELLO_API_KEY, process.env.TRELLO_TOKEN);
 const obsidian = new ObsidianService(obsidiandefault);
+const defaultListId = trellodefaultlist;
+const deps = {
+  trello,
+  obsidian,
+  defaultListId,
+} as ExecutorDeps;
+const executeTool = createExecutor(deps);
 
 async function sendReply(chatId: number, text: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -68,62 +74,16 @@ async function sendReply(chatId: number, text: string): Promise<void> {
   }
 }
 
-async function handleMessage(chatID: number, text: string): Promise<Result<ParsedMessage>> {
-  const parsedResult = await parseMessage(text);
+async function handleMessage(chatID: number, text: string): Promise<void> {
+  const result = await runAgent(text, executeTool);
 
-  if (!parsedResult.success) {
-    await sendReply(chatID, 'This message is cactus, mate');
-    return {
-      success: false,
-      error: {
-        code: parsedResult.error.code,
-        message: parsedResult.error.message,
-      },
-    };
-  }
-  const safeData = parsedResult.data;
-
-  switch (safeData.type) {
-    case 'task': {
-      const result = await trello.createCard(
-        trellodefaultlist!,
-        safeData.content,
-        undefined,
-        safeData.dueDate ?? undefined,
-      );
-      if (result.success) {
-        await sendReply(chatID, `✓ task: ${safeData.content}`);
-      } else {
-        await sendReply(chatID, `✗ failed to create task: ${result.error.message}`);
-        return { success: false, error: result.error };
-      }
-      break;
-    }
-    case 'note': {
-      const result = await obsidian.appendToDaily(safeData.content);
-      if (result.success) {
-        await sendReply(chatID, `✓ note added to daily`);
-      } else {
-        await sendReply(chatID, `✗ failed to save note: ${result.error.message}`);
-        return { success: false, error: result.error };
-      }
-      break;
-    }
-    case 'unknown':
-      await sendReply(chatID, 'Claude could not classify message as note or task');
-      return {
-        success: false,
-        error: {
-          code: 'UNKNOWN_TYPE',
-          message: 'Could not classify message',
-        },
-      };
+  if (!result.success) {
+    await sendReply(chatID, 'Something went wrong.  Try again');
+    console.error('Agent error:', result.error.message);
+    return;
   }
 
-  return {
-    success: true,
-    data: safeData,
-  };
+  await sendReply(chatID, result.data);
 }
 
 const app = express();

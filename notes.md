@@ -173,3 +173,23 @@ When a meaningful bug occurs, log:
 **Drilled:** message accumulation flow → PARTIAL (knew user/assistant push, missed tool_result shape and tool_use_id linkage)
 
 **Quick-check candidates for next session:** factory functions (write one from scratch), tool_result message shape, `getDailyNotePath()` absolute vs relative path interaction with safePath
+
+### Session 2026-02-18 — Task 4A.4: Update the gateway
+**Built/Changed:**
+- `src/gateway/server.ts` — Replaced `handleMessage()`. Removed `parseMessage()` + switch dispatch. Now calls `runAgent(text, executeTool)` directly. Executor created at module level via `createExecutor(deps)`. Removed `ParsedMessage` and `Result` imports. Return type simplified from `Promise<Result<ParsedMessage>>` to `Promise<void>` — sends reply inside the function.
+
+**Design decisions:**
+- Executor at module level — deps (trello, obsidian, defaultListId) don't change between messages, so create once at startup, not per-request.
+- `handleMessage` returns `void` — it owns sending the reply via `sendReply()`. No need to return a Result since nobody inspects the return value.
+- Error path still replies to user — agent failure sends "Something went wrong. Try again" so the user isn't left hanging.
+
+**Learned:**
+- **Agent replaces parser, not wraps it** — the whole `parseMessage()` → switch → service call chain collapses into one `runAgent()` call. The LLM picks tools, the executor calls services. No routing logic in the gateway.
+- **Return type follows usage** — if nobody inspects a return value, `void` is the right type. `Result<T>` is for callers that branch on success/failure.
+- **Module-level initialization** — when dependencies are stable (same services, same config), create once at top level. Avoids unnecessary object creation per request.
+
+**Drilled:** factory functions → PARTIAL (got the shape — outer takes config, returns inner function — but tangled parameter names in return type annotation, mixed up which function gets which param, `void` vs `string` return)
+
+**Still fuzzy (self-reported):** HOFs/factory functions (writing the type annotations), webhook handling flow (Express route → handler → reply)
+
+**Quick-check candidates for next session:** factory function return type annotation (write the type signature cold), Express webhook flow (what calls what), `Result<T>` vs `void` return — when to use which
