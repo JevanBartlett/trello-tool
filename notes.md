@@ -193,3 +193,40 @@ When a meaningful bug occurs, log:
 **Still fuzzy (self-reported):** HOFs/factory functions (writing the type annotations), webhook handling flow (Express route → handler → reply)
 
 **Quick-check candidates for next session:** factory function return type annotation (write the type signature cold), Express webhook flow (what calls what), `Result<T>` vs `void` return — when to use which
+
+### Session 2026-02-19 — Task 4A.5: Human-in-the-loop for archive_card
+**Built/Changed:**
+- `src/agent/executor.ts` — Added `ExecutorResult` discriminated union type (`success` | `confirmation_required`), `PendingApproval` interface, `setPendingApproval` callback on `ExecutorDeps`. All 10 cases now return `ExecutorResult` objects. `archive_card` stores pending and returns `confirmation_required`.
+- `src/agent/agent.ts` — Imported `ExecutorResult`, changed `executeTool` param type, added early return on `confirmation_required` status.
+- `src/gateway/server.ts` — Added `Map<number, PendingApproval>` at module level. Moved executor creation into `handleMessage` (needs per-message chatID for closure). Added pending check: get → delete → branch on yes/no/fallthrough.
+- `src/agent/tools.ts` — Added `name` field to `ArchiveCardInput` for human-readable confirmation messages.
+- `src/agent/executor.ts` — get_cards output now includes `desc` and `due` fields (quick enhancement).
+
+**Design decisions:**
+- `move_card` descoped from confirmation — not destructive, cards can be moved back.
+- `ExecutorResult` discriminated union over string prefix — robust, type-safe, agent loop checks `result.status` not string parsing.
+- `Map<number, PendingApproval>` keyed by chat ID — bridges stateless webhook requests. In-memory, reset on restart (acceptable for now).
+- `setPendingApproval` as callback on ExecutorDeps — executor stores pending without knowing about the Map. Dependency injection via callback.
+- Executor created per-message (moved from module level) — `setPendingApproval` closure needs per-message `chatID`.
+- Pending check deletes immediately — "consume" the pending state, then branch. No stale state.
+
+**Learned:**
+- **Discriminated unions** — `{ status: 'success'; message: string } | { status: 'confirmation_required'; message: string }`. TypeScript narrows on the `status` field. Same pattern as `Result<T>` but for a different branching need.
+- **Map as cross-request state** — `Map<number, PendingApproval>` stores state between stateless HTTP requests. Key is chat ID, value is the pending operation. Get once, delete immediately, branch on action.
+- **Per-message closure for chatID** — moving executor creation inside `handleMessage` lets the `setPendingApproval` arrow function capture the specific `chatID` via closure. Module-level executor can't do this.
+- **TypeScript narrowing inside if blocks** — inside `if (pending)`, TypeScript knows `pending` is `PendingApproval` not undefined. No optional chaining needed. `pending.cardId` not `pending?.cardId`.
+- **Object literal syntax** — `key: value,` with commas between properties, colon between key and value. Arrow function as value: `setPendingApproval: (approval: PendingApproval) => myMap.set(chatID, approval)`.
+- **Get-delete-branch pattern** — `.get()` once into a variable, `.delete()` immediately (consume state), then `if/return` for each action. Flat structure with early returns, not nested if/else.
+
+**Mistakes made (learning moments):**
+- Put `setPendingApproval` inside `PendingApproval` interface instead of `ExecutorDeps` — confused data vs dependency.
+- `deps.setPendingApproval(parsed.data.card_id)` — passed string instead of object literal.
+- `new Map<chatId: string, value: PendingApproval>()` — used named params in generic, should be `new Map<number, PendingApproval>()`.
+- Semicolons instead of colons in object literal: `setPendingApproval; (approval)=>` — syntax confusion between statement and property.
+- `createExecutor(...deps)` — spread object as args instead of passing object.
+- Yes/no checks outside `if (pending)` block — would fire on every message.
+- `pending?.cardId` inside narrowed block — unnecessary optional chaining.
+
+**Drilled:** Type guards / TypeScript narrowing → PASS (knew `pending` is narrowed inside `if` block, correctly explained why `?.` is wrong there). Was shaky last session, solid now.
+
+**Quick-check candidates for next session:** discriminated union (write ExecutorResult type from scratch), Map generic syntax, object literal with arrow function values, factory function return type annotation (carried forward)

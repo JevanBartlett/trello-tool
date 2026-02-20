@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Result } from '../types/result.js';
+import type { ExecutorResult } from './executor.js';
 import { tools } from './tools.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -32,7 +33,7 @@ Always confirm what you did in a brief, friendly reply.`;
 
 export async function runAgent(
   userMessage: string,
-  executeTool: (name: string, input: Record<string, unknown>) => Promise<string>,
+  executeTool: (name: string, input: Record<string, unknown>) => Promise<ExecutorResult>,
 ): Promise<Result<string>> {
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }];
 
@@ -92,10 +93,17 @@ export async function runAgent(
 
         const result = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>);
 
+        if (result.status === 'confirmation_required') {
+          console.log(
+            `[agent] confirmation required | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}`,
+          );
+          return { success: true, data: result.message };
+        }
+
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
-          content: result,
+          content: result.message,
         });
       }
 

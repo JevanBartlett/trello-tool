@@ -21,6 +21,7 @@ export const MoveCardInput = z.object({
   target_list_id: z.string(),
 });
 export const ArchiveCardInput = z.object({
+  name: z.string(),
   card_id: z.string(),
 });
 

@@ -5,18 +5,21 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4A / Task 4A.4: Update the gateway
-Status: COMPLETE
+Phase / Task: Phase 4A / Task 4A.5: Human-in-the-loop for archive_card
+Status: COMPLETE — awaiting commit
 
 Progress
-Task 4A.4 complete. Replaced `handleMessage()` in `server.ts`:
-- Removed `parseMessage()` + switch dispatch entirely
-- Now calls `runAgent(text, executeTool)` → `sendReply(chatID, result.data)`
-- Executor created at module level via `createExecutor(deps)` — deps don't change between messages
-- Removed unused imports: `ParsedMessage`, `Result`
-- Return type simplified to `Promise<void>` — `handleMessage` sends the reply itself
-- Live tested via Telegram: task with due date, note append, and multi-tool call (task + note in one turn) all working
-- Token usage jumped from ~255 (old parser) to ~3900 (agent with 10 tool definitions) — expected
+Task 4A.5 complete. Added confirmation flow for `archive_card`:
+- `ExecutorResult` discriminated union replaces plain string returns across all 10 executor cases
+- `PendingApproval` interface: toolName, cardId, description
+- `setPendingApproval` callback added to `ExecutorDeps` — executor stores pending without knowing about the Map
+- `Map<number, PendingApproval>` in server.ts keyed by Telegram chat ID
+- Agent loop checks `result.status`, exits early on `confirmation_required`
+- `handleMessage` checks Map first: yes → archive, no → cancel, anything else → fall through to agent
+- `ArchiveCardInput` schema gets `name` field for human-readable confirmation messages
+- get_cards output now includes desc and due fields (quick enhancement)
+- Executor moved from module-level to per-message creation (closure needs per-message chatID)
+- Live tested via Telegram: archive prompts for confirmation, yes executes, no cancels
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -43,18 +46,22 @@ Decisions Made
 - Agent system prompt has no examples — tool definitions serve as the schema, not prompt-engineered JSON examples
 - Model extracted to `const model` — single line change to swap models
 - Factory function `createExecutor(deps)` — captures services via closure, returns `executeTool`. Agent loop receives function as parameter, no service imports needed.
-- `ExecutorDeps` interface — explicit dependency declaration (trello, obsidian, defaultListId). No hidden env reads in executor.
+- `ExecutorDeps` interface — explicit dependency declaration (trello, obsidian, defaultListId, setPendingApproval). No hidden env reads in executor.
 - `read_daily` skips safeParse — empty input schema, nothing to validate
 - `runAgent` takes `executeTool` as second parameter — dependency injection via function arg, not imports or globals
-- Executor at module level in server.ts — deps are stable, create once at startup not per-request
 - `handleMessage` returns `void` — nobody inspects the return value, it sends the reply itself
+- `move_card` descoped from confirmation — not destructive, cards can be moved back
+- `ExecutorResult` discriminated union over string prefix — robust, type-safe, agent loop checks `result.status`
+- `setPendingApproval` as callback on ExecutorDeps — executor stores pending without knowing about the Map
+- Per-message executor creation — `setPendingApproval` closure needs per-message chatID, can't be module-level
+- Pending check deletes Map entry immediately — consume state, then branch. No stale state.
 
 Files in Play
-- `src/gateway/server.ts` — Webhook auth guard, startup env validation, module-level executor creation, handleMessage calls runAgent + sendReply
-- `src/gateway/parser.ts` — RETIRED. `buildSystemPrompt()` with dynamic date, YYYY-MM-DD due date format. Replaced by agent in 4A.4, kept for reference.
-- `src/agent/executor.ts` — Factory function, 10 tool cases, Zod validation, Result unwrapping
-- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), buildSystemPrompt(). Stub removed.
-- `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions array (typed as Anthropic.Tool[])
+- `src/gateway/server.ts` — Webhook auth guard, startup env validation, per-message executor creation, Map<number, PendingApproval> for pending approvals, handleMessage checks pending before routing to agent
+- `src/gateway/parser.ts` — RETIRED. Replaced by agent in 4A.4, kept for reference.
+- `src/agent/executor.ts` — Factory function, ExecutorResult discriminated union, PendingApproval interface, setPendingApproval on ExecutorDeps, 10 tool cases, archive_card returns confirmation_required
+- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), checks result.status, exits early on confirmation_required
+- `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions. ArchiveCardInput has name field.
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
 - `src/services/config-service.ts` — `readFileSync` inside try/catch
 - `src/utils/request.ts` — `response.json()` try/catch for non-JSON responses
@@ -64,12 +71,13 @@ Files in Play
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Task 4A.5: Human-in-the-loop for destructive operations. Add confirmation prompts before `archive_card` and `move_card` execute. Two options: simple (tag tools as `requiresApproval`, check in executor) or state-based (pending approvals Map keyed by chat ID). Start simple.
+Task 4A.6: Agent error handling. Wrap agent loop in robust error handling — API failures, unknown tools, tool execution failures, empty responses. Return errors as tool results so Haiku can communicate failures naturally.
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
 2. `getDailyNotePath()` returns absolute path, `readNote()` runs it through `safePath()` — works because absolute path starts with vaultPath, but coupling is fragile
 3. `parser.ts` still exists but is no longer called — kept for reference, could delete
+4. In-memory Map resets on server restart — pending approvals lost. Acceptable for now.
 
 Blockers
 None.
@@ -85,15 +93,19 @@ Failed Approaches
 - `parsed.data.string` on `read_daily` — ReadDailyInput is empty object, no fields. Use `getDailyNotePath()` instead.
 - Tried `Result<ExecutorDeps>` as return type of `createExecutor` — factory isn't async, doesn't do I/O, just returns a function.
 - First attempt at handleMessage return type: `Promise<Result<ParsedMessage>>` — but nobody uses the return value, and ParsedMessage no longer exists in the flow. Simplified to `Promise<void>`.
+- Agent loop didn't stop on confirmation — CONFIRMATION_REQUIRED string treated as normal tool result, loop continued and Haiku executed the archive. Fixed with `ExecutorResult` discriminated union.
+- `setPendingApproval` inside `PendingApproval` interface — confused data interface with dependency interface. Moved to `ExecutorDeps`.
+- `new Map<chatId: string, value: PendingApproval>()` — named params in generic syntax. Fixed to `new Map<number, PendingApproval>()`.
+- Yes/no checks outside `if (pending)` block — would fire on every message, not just when pending exists.
 
 This Week's Pattern
-Gateway simplification — entire routing layer (parser + switch + service calls) collapses into one `runAgent()` call. The LLM decides what to do, the executor calls services, the gateway just hands off text and sends the reply.
+Discriminated unions for control flow — `ExecutorResult` status field drives branching in the agent loop. Same idea as `Result<T>` but for a different decision point. Pattern: define the union, check the discriminant, branch.
 
 Last Session
 
-Date: 2026-02-18
-Duration: ~30 minutes
-Mode: Coach (gateway wiring), Teach (factory function syntax during quick-check)
+Date: 2026-02-19
+Duration: ~45 minutes
+Mode: Coach (human-in-the-loop implementation), Teach (object literal syntax, Map generics, discriminated unions)
 Kill? clean
 
 Agent Reading Protocol

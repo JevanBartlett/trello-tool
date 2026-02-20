@@ -807,9 +807,9 @@ That's it. The entire routing logic collapses into one function call.
 
 ---
 
-## Task 4A.5: Human-in-the-loop for destructive operations
+## ✅ Task 4A.5: Human-in-the-loop for destructive operations
 
-Some tools shouldn't execute without confirmation. Archive and move are destructive.
+Some tools shouldn't execute without confirmation. Archive is destructive (move_card descoped — not destructive).
 
 **The pattern (adapted for Telegram):**
 
@@ -827,12 +827,14 @@ When the agent wants to call `archive_card` or `move_card`:
 Start with simple. You can upgrade later.
 
 **Done when:**
-- `archive_card` and `move_card` prompt for confirmation before executing
+- `archive_card` prompts for confirmation before executing
 - User can approve or reject
 - Rejected tool calls feed back into the agent loop so Haiku can respond naturally
 - Non-destructive tools (create_task, append_note, search, read) execute immediately
 
 **Time estimate:** 2-3 hours
+
+**Completed:** Scoped to `archive_card` only (`move_card` descoped — not destructive). Added `ExecutorResult` discriminated union (`success` | `confirmation_required`) replacing plain string returns. `PendingApproval` stored in per-chat `Map<number, PendingApproval>` in server.ts. Executor stores pending via `setPendingApproval` callback on `ExecutorDeps`. Agent loop checks `result.status`, exits early on `confirmation_required`. `handleMessage` checks Map before routing to agent — yes executes archive, no cancels, anything else falls through to normal agent. Added `name` field to `ArchiveCardInput` for human-readable confirmation messages. Live tested via Telegram.
 
 ---
 

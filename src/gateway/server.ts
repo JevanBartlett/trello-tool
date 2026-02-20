@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 import { runAgent } from '../agent/agent.js';
-import { createExecutor, type ExecutorDeps } from '../agent/executor.js';
+import { createExecutor, type PendingApproval } from '../agent/executor.js';
 import { ConfigService } from '../services/config-service.js';
 import { ObsidianService } from '../services/obsidian-service.js';
 import { TrelloService } from '../services/trello-service.js';
@@ -14,6 +14,8 @@ interface TelegramUpdate {
     };
   };
 }
+const myMap = new Map<number, PendingApproval>();
+
 const config = new ConfigService();
 const defaults = config.getConfig();
 if (!defaults.success) {
@@ -52,12 +54,6 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 const trello = new TrelloService(process.env.TRELLO_API_KEY, process.env.TRELLO_TOKEN);
 const obsidian = new ObsidianService(obsidiandefault);
 const defaultListId = trellodefaultlist;
-const deps = {
-  trello,
-  obsidian,
-  defaultListId,
-} as ExecutorDeps;
-const executeTool = createExecutor(deps);
 
 async function sendReply(chatId: number, text: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -75,6 +71,36 @@ async function sendReply(chatId: number, text: string): Promise<void> {
 }
 
 async function handleMessage(chatID: number, text: string): Promise<void> {
+  const pending = myMap.get(chatID);
+
+  if (pending) {
+    myMap.delete(chatID);
+
+    if (text.toLowerCase() === 'yes') {
+      const result = await trello.archiveCard(pending.cardId);
+      if (!result.success) {
+        await sendReply(chatID, `Archive failed: ${result.error.message}`);
+        return;
+      }
+      await sendReply(chatID, 'Card Archived!');
+      return;
+    }
+
+    if (text.toLowerCase() === 'no') {
+      await sendReply(chatID, 'Cancelled');
+      return;
+    }
+    // User said something else — fall through to normal agent
+  }
+
+  const deps = {
+    trello,
+    obsidian,
+    defaultListId,
+    setPendingApproval: (approval: PendingApproval) => myMap.set(chatID, approval),
+  };
+
+  const executeTool = createExecutor(deps);
   const result = await runAgent(text, executeTool);
 
   if (!result.success) {
