@@ -5,21 +5,19 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4A / Task 4A.5: Human-in-the-loop for archive_card
+Phase / Task: Phase 4A / Task 4A.6: Agent error handling
 Status: COMPLETE — awaiting commit
 
 Progress
-Task 4A.5 complete. Added confirmation flow for `archive_card`:
-- `ExecutorResult` discriminated union replaces plain string returns across all 10 executor cases
-- `PendingApproval` interface: toolName, cardId, description
-- `setPendingApproval` callback added to `ExecutorDeps` — executor stores pending without knowing about the Map
-- `Map<number, PendingApproval>` in server.ts keyed by Telegram chat ID
-- Agent loop checks `result.status`, exits early on `confirmation_required`
-- `handleMessage` checks Map first: yes → archive, no → cancel, anything else → fall through to agent
-- `ArchiveCardInput` schema gets `name` field for human-readable confirmation messages
-- get_cards output now includes desc and due fields (quick enhancement)
-- Executor moved from module-level to per-message creation (closure needs per-message chatID)
-- Live tested via Telegram: archive prompts for confirmation, yes executes, no cancels
+Task 4A.6 complete. Added robust error handling to the agent loop:
+- try/catch around `executeTool` — errors fed back as tool results so Haiku explains failures naturally
+- Retry-once with 1s backoff for retryable errors (rate limit 429, network failures)
+- Non-retryable errors (auth 401) return immediately with descriptive message
+- `APIError` import from Anthropic SDK for typed error differentiation
+- `isRetryable` check: `(error instanceof APIError && error.status === 429) || !(error instanceof APIError)`
+- Structured logging on all paths: `[agent] received`, `[agent] tool call`, retry warnings, error details, token usage
+- `console.warn` in executor default case for unknown tool requests
+- Empty response fallback already existed (`reply || "Done, but..."`)
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -55,12 +53,16 @@ Decisions Made
 - `setPendingApproval` as callback on ExecutorDeps — executor stores pending without knowing about the Map
 - Per-message executor creation — `setPendingApproval` closure needs per-message chatID, can't be module-level
 - Pending check deletes Map entry immediately — consume state, then branch. No stale state.
+- Retry only transient errors — 429 rate limit and network errors retry once. Auth (401) returns immediately.
+- Tool errors as tool results — Haiku writes better error messages than switch statements. Feed error text back as tool_result.
+- `error.message` over `error.status` — SDK types status loosely (any), lint rejects. Message is more useful.
+- Single retry, not a loop — duplicate API call is ugly but honest. One retry with fixed 1s delay.
 
 Files in Play
 - `src/gateway/server.ts` — Webhook auth guard, startup env validation, per-message executor creation, Map<number, PendingApproval> for pending approvals, handleMessage checks pending before routing to agent
 - `src/gateway/parser.ts` — RETIRED. Replaced by agent in 4A.4, kept for reference.
-- `src/agent/executor.ts` — Factory function, ExecutorResult discriminated union, PendingApproval interface, setPendingApproval on ExecutorDeps, 10 tool cases, archive_card returns confirmation_required
-- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), checks result.status, exits early on confirmation_required
+- `src/agent/executor.ts` — Factory function, ExecutorResult discriminated union, PendingApproval interface, setPendingApproval on ExecutorDeps, 10 tool cases, archive_card returns confirmation_required, console.warn on unknown tool
+- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), retry-once on transient API errors, try/catch around executeTool, structured logging on all paths, checks result.status for confirmation_required
 - `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions. ArchiveCardInput has name field.
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
 - `src/services/config-service.ts` — `readFileSync` inside try/catch
@@ -71,7 +73,7 @@ Files in Play
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Task 4A.6: Agent error handling. Wrap agent loop in robust error handling — API failures, unknown tools, tool execution failures, empty responses. Return errors as tool results so Haiku can communicate failures naturally.
+Task 4A.7: Context window awareness. Add basic token tracking — estimate tokens, log warnings if usage is high, track per agent run.
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
@@ -97,15 +99,20 @@ Failed Approaches
 - `setPendingApproval` inside `PendingApproval` interface — confused data interface with dependency interface. Moved to `ExecutorDeps`.
 - `new Map<chatId: string, value: PendingApproval>()` — named params in generic syntax. Fixed to `new Map<number, PendingApproval>()`.
 - Yes/no checks outside `if (pending)` block — would fire on every message, not just when pending exists.
+- First try/catch around executeTool returned Result failure — kills the agent run. Fixed to push error as tool_result so Haiku can respond.
+- `result` scoped inside try block — toolResults.push referenced it outside. Fixed by moving push inside try.
+- `import { is } from 'zod/locales'` — autocomplete artifact, removed.
+- `error instance of APIError` — space in keyword. Fixed to `instanceof`.
+- `error.status` on APIError — SDK types it as `any`, lint rejects `no-unsafe-assignment`. Used `error.message` instead.
 
 This Week's Pattern
-Discriminated unions for control flow — `ExecutorResult` status field drives branching in the agent loop. Same idea as `Result<T>` but for a different decision point. Pattern: define the union, check the discriminant, branch.
+Error as data — instead of crashing or returning failure from the agent loop, feed error text back as tool results. The LLM sees the error and explains it naturally. Same principle as Result<T> (errors are values, not exceptions) but applied at the LLM boundary.
 
 Last Session
 
-Date: 2026-02-19
+Date: 2026-02-20
 Duration: ~45 minutes
-Mode: Coach (human-in-the-loop implementation), Teach (object literal syntax, Map generics, discriminated unions)
+Mode: Coach (error handling implementation), Teach (async sleep, retry pattern, APIError narrowing)
 Kill? clean
 
 Agent Reading Protocol

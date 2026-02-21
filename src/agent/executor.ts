@@ -207,6 +207,7 @@ export function createExecutor(
       }
 
       default:
+        console.warn(`[executor] unknown tool requested: ${name}`);
         return { status: 'success', message: `Unknown tool: ${name}` };
     }
   };

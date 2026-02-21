@@ -22,6 +22,7 @@
 - `instanceof` for type-checking — how it works with class hierarchies [graduated: P4A]
 - Separation of concerns — API module throws structured errors, CLI formats for user [graduated: P4A]
 - Commander `.option()` — options come as object in last callback parameter [graduated: P4A]
+- `Object.entries()` — what it returns, how to use it [graduated: P4A]
 
 ## Still Working Through
 
@@ -30,7 +31,6 @@
 - TypeScript utility types — `Record<K, V>`, what others exist, when to use them [added: P1]
 - `Result<T>` pattern and generics — need deliberate practice with `<T>` syntax [added: P1]
 - TypeScript generics in general — `Array<T>`, `Promise<T>`, custom generics [added: P1]
-- `Object.entries()` — what it returns, how to use it [added: P1]
 - Array destructuring in loops — `for (const [key, value] of ...` [added: P1]
 - Variable shadowing — `let x` in inner block vs assigning to outer `x` [added: P2]
 - Variable scoping in if blocks — `const` inside `if` isn't accessible outside it [added: P2]
@@ -40,6 +40,9 @@
 ### Error Handling
 - ENOENT pattern — `(error as NodeJS.ErrnoException).code` for file system errors [added: P2]
 - Nested try/catch — inner catches specific error, re-throws others to outer handler [added: P2]
+- try/catch scoping — variables inside `try` aren't accessible in `catch` or after the block [added: P4A]
+- Retry pattern — async sleep with `new Promise(resolve => setTimeout(resolve, ms))`, retry-once structure [added: P4A]
+- Error as data (tool results) — feeding errors back into the LLM loop instead of crashing or returning failure [added: P4A]
 
 ### Node.js / Runtime
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood [added: P1]
@@ -230,3 +233,26 @@ When a meaningful bug occurs, log:
 **Drilled:** Type guards / TypeScript narrowing → PASS (knew `pending` is narrowed inside `if` block, correctly explained why `?.` is wrong there). Was shaky last session, solid now.
 
 **Quick-check candidates for next session:** discriminated union (write ExecutorResult type from scratch), Map generic syntax, object literal with arrow function values, factory function return type annotation (carried forward)
+
+### Session 2026-02-20 — Task 4A.6: Agent error handling
+**Built/Changed:**
+- `src/agent/agent.ts` — Added try/catch around `executeTool` call (errors fed back as tool results). Added retry-once with 1s backoff for retryable API errors (429, network). Non-retryable errors (401 auth) return immediately. Added `APIError` import. Added structured logging: user input on entry, retry warnings, error details on all failure paths.
+- `src/agent/executor.ts` — Added `console.warn` in default case for unknown tool requests.
+
+**Design decisions:**
+- Retry only on transient failures (rate limit 429, network errors) — auth failures (401) won't self-correct, no point retrying.
+- Tool execution errors fed back as `tool_result` strings, not returned as `Result` failures — Haiku writes better error messages than a switch statement.
+- Single retry with 1s fixed delay — simple, not a retry loop. Duplicate `client.messages.create()` call is ugly but honest.
+- `error.message` over `error.status` in non-retryable path — SDK types `status` loosely (`any`), lint rejects it. Message is more useful anyway.
+
+**Learned:**
+- **Async sleep pattern** — `await new Promise(resolve => setTimeout(resolve, 1000))`. Wraps `setTimeout` in a Promise so you can `await` it. `setTimeout` alone returns `Timeout`, not a Promise.
+- **Retry-once pattern** — try → catch → is it retryable? → sleep → try again → catch again → give up. Two nested try/catch blocks.
+- **`instanceof` on unknown** — `error` in catch blocks is `unknown`. Use `error instanceof Error ? error.message : String(error)` to safely extract a message from anything.
+- **Error as data** — instead of crashing or returning failure, push error text as a tool result. The LLM loop continues and Haiku explains the failure naturally.
+- **`APIError` from Anthropic SDK** — typed error with `status` property. `instanceof APIError` narrows, then check `.status` for specific HTTP codes.
+- **try/catch scoping** — variables declared inside `try {}` aren't accessible in `catch {}` or after. Move dependent code inside the try block, or restructure.
+
+**Drilled:** Discriminated unions → PARTIAL (wrote the type correctly with three variants and status discriminant, but reached for `Result<T>` first, checked on type name instead of variable, didn't reach for `if/else if/else` or early returns independently)
+
+**Quick-check candidates for next session:** async sleep pattern (write it cold), try/catch scoping (what's accessible where), retry pattern (write retry-once from scratch), `instanceof` narrowing on `unknown` catch errors

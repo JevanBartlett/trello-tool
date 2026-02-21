@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { APIError } from '@anthropic-ai/sdk';
 import type { Result } from '../types/result.js';
 import type { ExecutorResult } from './executor.js';
 import { tools } from './tools.js';
@@ -40,6 +40,7 @@ export async function runAgent(
   let iterations: number = 0;
   let totalInputTokens: number = 0;
   let totalOutputTokens: number = 0;
+  console.log(`[agent] received: "${userMessage}"`);
 
   while (iterations < MAX_ITERATIONS) {
     iterations++;
@@ -53,14 +54,39 @@ export async function runAgent(
         tools: tools,
         messages: messages,
       });
-    } catch {
-      return {
-        success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: 'Failed to connect to Anthropic API',
-        },
-      };
+    } catch (error) {
+      const isRetryable =
+        (error instanceof APIError && error.status === 429) || !(error instanceof APIError);
+
+      if (isRetryable) {
+        console.warn('[agent] retryable API error, waiting 1s before retry');
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+          response = await client.messages.create({
+            model: model,
+            max_tokens: 1024,
+            system: buildSystemPrompt(),
+            tools: tools,
+            messages: messages,
+          });
+        } catch {
+          console.error('[agent] Anthropic API failed after retry');
+          return {
+            success: false,
+            error: {
+              code: 'API_ERROR',
+              message: 'Anthropic API failed after retry',
+            },
+          };
+        }
+      } else {
+        const message = error instanceof APIError ? error.message : 'Unknown API error';
+        console.error(`[agent] non-retryable API error: ${message}`);
+        return {
+          success: false,
+          error: { code: 'API_ERROR', message },
+        };
+      }
     }
 
     totalInputTokens += response.usage.input_tokens;
@@ -91,20 +117,30 @@ export async function runAgent(
       for (const toolUse of toolUseBlocks) {
         console.log(`[agent] tool call: ${toolUse.name}`, toolUse.input);
 
-        const result = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>);
+        try {
+          const result = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>);
 
-        if (result.status === 'confirmation_required') {
-          console.log(
-            `[agent] confirmation required | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}`,
-          );
-          return { success: true, data: result.message };
+          if (result.status === 'confirmation_required') {
+            console.log(
+              `[agent] confirmation required | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}`,
+            );
+            return { success: true, data: result.message };
+          }
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: result.message,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`[agent] tool execution error: ${toolUse.name} — ${message}`);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: `Tool error: ${toolUse.name} failed - ${message}`,
+          });
         }
-
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: result.message,
-        });
       }
 
       messages.push({ role: 'user', content: toolResults });

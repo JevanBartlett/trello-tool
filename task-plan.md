@@ -838,7 +838,7 @@ Start with simple. You can upgrade later.
 
 ---
 
-## Task 4A.6: Agent error handling
+## ✅ Task 4A.6: Agent error handling
 
 Wrap the agent loop in robust error handling. This replaces/extends your existing Task 4.5 from the original plan.
 
@@ -861,6 +861,8 @@ Wrap the agent loop in robust error handling. This replaces/extends your existin
 - Structured logging captures: user input, tools called, results, final response, token usage
 
 **Time estimate:** 1.5-2 hours
+
+**Completed:** Added try/catch around `executeTool` (errors fed back as tool results to Haiku). Retry-once with 1s backoff for rate limit (429) and network errors. Non-retryable errors (401 auth) return immediately. `APIError` import for typed error differentiation. Structured logging on all paths: user input, tool calls, retry warnings, error details, token usage. Unknown tool default case gets `console.warn`. Empty response fallback already handled.
 
 ---
 
@@ -1022,26 +1024,6 @@ fly deploy
 
 ---
 
-### Task 5.7: Automated tests
-
-Add test coverage for the core paths: API integrations, file I/O, and parser logic.
-
-- Set up vitest (or jest) with a `test` script in `package.json`
-- Unit tests for `parseMessage()` — task/note/unknown classification, due-date extraction
-- Unit tests for `request()` — success, non-JSON, network failure
-- Unit tests for `ObsidianService` — daily note creation, append, path traversal rejection
-- Integration test for `TrelloService` — mock HTTP, verify Zod validation on real-shaped responses
-- CI: add `npm test` to pre-commit or check script
-
-**Done when:**
-- `npm test` runs and passes
-- Core parsing, request, and service logic has coverage
-- Tests catch regressions in Zod schemas and Result handling
-
-**Time estimate:** 3-4 hours
-
----
-
 # Phase 6: Polish + Reliability
 
 ### Task 6.0: Code hardening
@@ -1090,6 +1072,26 @@ Defensive fixes identified during cross-AI audit (Claude + ChatGPT).
 **Done when:** Daily summary arrives automatically
 
 **Time estimate:** 1.5 hours
+
+---
+
+### Task 6.5: Automated tests
+
+Add test coverage for the core paths: API integrations, file I/O, and agent logic.
+
+- Set up vitest (or jest) with a `test` script in `package.json`
+- Unit tests for `request()` — success, non-JSON, network failure
+- Unit tests for `ObsidianService` — daily note creation, append, path traversal rejection
+- Integration test for `TrelloService` — mock HTTP, verify Zod validation on real-shaped responses
+- Unit tests for executor — tool dispatch, ExecutorResult types, confirmation flow
+- CI: add `npm test` to pre-commit or check script
+
+**Done when:**
+- `npm test` runs and passes
+- Core request, service, and executor logic has coverage
+- Tests catch regressions in Zod schemas and Result handling
+
+**Time estimate:** 3-4 hours
 
 ---
 
