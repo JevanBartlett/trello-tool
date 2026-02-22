@@ -5,19 +5,17 @@ Read this file FIRST. Hot session state. Everything else is reference.
 Task
 
 Objective: Build Telegram bot gateway — the product's front door
-Phase / Task: Phase 4A / Task 4A.6: Agent error handling
+Phase / Task: Phase 4A / Task 4A.7: Context window awareness
 Status: COMPLETE — awaiting commit
 
 Progress
-Task 4A.6 complete. Added robust error handling to the agent loop:
-- try/catch around `executeTool` — errors fed back as tool results so Haiku explains failures naturally
-- Retry-once with 1s backoff for retryable errors (rate limit 429, network failures)
-- Non-retryable errors (auth 401) return immediately with descriptive message
-- `APIError` import from Anthropic SDK for typed error differentiation
-- `isRetryable` check: `(error instanceof APIError && error.status === 429) || !(error instanceof APIError)`
-- Structured logging on all paths: `[agent] received`, `[agent] tool call`, retry warnings, error details, token usage
-- `console.warn` in executor default case for unknown tool requests
-- Empty response fallback already existed (`reply || "Done, but..."`)
+Task 4A.7 complete. Added context window awareness to the agent loop:
+- `MAX_CONTEXT_TOKENS` (200k) and `THRESHOLD` (75%) constants
+- `console.warn` when `totalInputTokens + totalOutputTokens >= THRESHOLD`
+- Token logging added to all 6 exit paths (3 were missing: API retry failure, non-retryable API error, unexpected stop reason)
+- Separated token info from user-facing Result error messages — diagnostics go to console, not to Telegram
+- Fixed "interation" typos → "iteration"
+- Used real `response.usage` counts from API instead of character-count estimation
 
 Decisions Made
 - Token stored in `.env` (not `~/.ctx/config.json`) — matches existing Trello credential pattern
@@ -57,12 +55,15 @@ Decisions Made
 - Tool errors as tool results — Haiku writes better error messages than switch statements. Feed error text back as tool_result.
 - `error.message` over `error.status` — SDK types status loosely (any), lint rejects. Message is more useful.
 - Single retry, not a loop — duplicate API call is ugly but honest. One retry with fixed 1s delay.
+- Real `response.usage` token counts over character-count estimation — API gives exact numbers, no need to estimate.
+- 75% threshold over 50% — with fresh context per message, even 75% is unreachable for quick captures. Safety net for future.
+- Token info in console logs, not in Result error messages — Results surface to users via Telegram, token counts are internal diagnostics.
 
 Files in Play
 - `src/gateway/server.ts` — Webhook auth guard, startup env validation, per-message executor creation, Map<number, PendingApproval> for pending approvals, handleMessage checks pending before routing to agent
 - `src/gateway/parser.ts` — RETIRED. Replaced by agent in 4A.4, kept for reference.
 - `src/agent/executor.ts` — Factory function, ExecutorResult discriminated union, PendingApproval interface, setPendingApproval on ExecutorDeps, 10 tool cases, archive_card returns confirmation_required, console.warn on unknown tool
-- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), retry-once on transient API errors, try/catch around executeTool, structured logging on all paths, checks result.status for confirmation_required
+- `src/agent/agent.ts` — Agent loop: runAgent(userMessage, executeTool), retry-once on transient API errors, try/catch around executeTool, structured logging on all paths, checks result.status for confirmation_required, MAX_CONTEXT_TOKENS/THRESHOLD constants, console.warn on high token usage
 - `src/agent/tools.ts` — 10 Zod input schemas + Anthropic tool definitions. ArchiveCardInput has name field.
 - `src/services/obsidian-service.ts` — `safePath()` guard with `path.sep` fix, `buildDate()` local timezone helper
 - `src/services/config-service.ts` — `readFileSync` inside try/catch
@@ -73,7 +74,7 @@ Files in Play
 - `task-plan.md` — Task 6.0 added for deferred hardening items
 
 What's Next
-Task 4A.7: Context window awareness. Add basic token tracking — estimate tokens, log warnings if usage is high, track per agent run.
+Phase 4A is complete. All 7 tasks done (4A.1–4A.7). Run Phase 4A checkpoint review before moving to Phase 5 (Deploy).
 
 Known Issues
 1. `buildDate()` duplicated in obsidian-service and parser — could extract to shared utility later
@@ -104,15 +105,16 @@ Failed Approaches
 - `import { is } from 'zod/locales'` — autocomplete artifact, removed.
 - `error instance of APIError` — space in keyword. Fixed to `instanceof`.
 - `error.status` on APIError — SDK types it as `any`, lint rejects `no-unsafe-assignment`. Used `error.message` instead.
+- First attempt at console.error placement for unexpected stop reason — put it inside the tool_use block (fires on every tool use). Moved outside to the fallthrough before the return.
 
 This Week's Pattern
 Error as data — instead of crashing or returning failure from the agent loop, feed error text back as tool results. The LLM sees the error and explains it naturally. Same principle as Result<T> (errors are values, not exceptions) but applied at the LLM boundary.
 
 Last Session
 
-Date: 2026-02-20
-Duration: ~45 minutes
-Mode: Coach (error handling implementation), Teach (async sleep, retry pattern, APIError narrowing)
+Date: 2026-02-21
+Duration: ~20 minutes
+Mode: Coach (token tracking implementation), Teach (stdout vs stderr, shell redirection)
 Kill? clean
 
 Agent Reading Protocol

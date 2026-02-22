@@ -46,7 +46,7 @@
 
 ### Node.js / Runtime
 - `tsc` vs `tsx` — when to use which, what each actually does under the hood [added: P1]
-- `console.error()` vs `console.log()` — stderr vs stdout separation [added: P1]
+- `console.error()` vs `console.log()` — stderr vs stdout separation [added: P1] **[GRADUATION CANDIDATE: used correctly in 4A.6 and 4A.7, explained difference without notes]**
 - `fs.readFile()` — read file contents as string, needs `'utf-8'` encoding [added: P2]
 - `fs.writeFile()` — write/overwrite file contents [added: P2]
 - `fs.appendFile()` — append to end of file (creates if doesn't exist) [added: P2]
@@ -256,3 +256,22 @@ When a meaningful bug occurs, log:
 **Drilled:** Discriminated unions → PARTIAL (wrote the type correctly with three variants and status discriminant, but reached for `Result<T>` first, checked on type name instead of variable, didn't reach for `if/else if/else` or early returns independently)
 
 **Quick-check candidates for next session:** async sleep pattern (write it cold), try/catch scoping (what's accessible where), retry pattern (write retry-once from scratch), `instanceof` narrowing on `unknown` catch errors
+
+### Session 2026-02-21 — Task 4A.7: Context window awareness
+**Built/Changed:**
+- `src/agent/agent.ts` — Added `MAX_CONTEXT_TOKENS` (200k) and `THRESHOLD` (75%) constants. Added `console.warn` when total tokens >= threshold. Added token logging to 3 missing error exit paths (API retry failure, non-retryable API error, unexpected stop reason). Separated token info from user-facing error messages (token counts in console logs, not in Result messages). Fixed "interation" typos.
+
+**Design decisions:**
+- Used real `response.usage` token counts instead of character-count estimation — API gives exact numbers, no need to estimate.
+- 75% threshold instead of 50% — with fresh context per message, hitting even 75% is essentially impossible for quick captures. Safety net, not a feature.
+- No cost estimation — nobody monitoring spend yet. Token counts are sufficient until Fly.io deployment.
+- Token info belongs in logs, not in Result error messages — Results can surface to users via Telegram, token counts are internal diagnostics.
+
+**Learned:**
+- **stdout vs stderr in practice** — `console.log` → stdout (informational), `console.error` → stderr (problems), `console.warn` → stderr (warnings). Same terminal output locally, but monitoring tools can filter by stream in production.
+- **Shell redirection** — `2>` redirects stderr (file descriptor 2), `1>` or `>` redirects stdout (file descriptor 1). `2>&1` merges both streams.
+- **Logs vs user messages** — diagnostic data (token counts, iteration numbers) goes to console for devops. Error messages in Result objects go to users via Telegram. Keep audiences separate.
+
+**Drilled:** console.error vs console.log → PASS (explained stdout vs stderr, knew why it matters in production, used correctly in code)
+
+**Quick-check candidates for next session:** shell redirection (`2>` syntax), stdout vs stderr file descriptors

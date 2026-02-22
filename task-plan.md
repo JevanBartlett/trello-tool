@@ -866,7 +866,7 @@ Wrap the agent loop in robust error handling. This replaces/extends your existin
 
 ---
 
-## Task 4A.7: Context window awareness
+## ✅ Task 4A.7: Context window awareness
 
 Add basic token tracking. You don't need compaction yet (Telegram conversations are short), but you need to know when you're approaching limits.
 
@@ -885,6 +885,8 @@ Add basic token tracking. You don't need compaction yet (Telegram conversations 
 - You can see in logs how much each interaction costs
 
 **Time estimate:** 30-45 minutes
+
+**Completed:** Added `MAX_CONTEXT_TOKENS` (200k) and `THRESHOLD` (75%) constants. Token logging added to all 6 exit paths (was missing on 3 error branches). `console.warn` fires when total tokens >= threshold. Used real `response.usage` counts instead of character-count estimation. Fixed typos ("interation" → "iteration"). Separated log data from user-facing error messages (token counts go to console, not Result messages).
 
 ---
 

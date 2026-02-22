@@ -6,6 +6,8 @@ import { tools } from './tools.js';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MAX_ITERATIONS: number = 10;
 const model = 'claude-haiku-4-5-20251001';
+const MAX_CONTEXT_TOKENS = 200000;
+const THRESHOLD = MAX_CONTEXT_TOKENS * 0.75;
 
 function buildSystemPrompt(): string {
   const now = new Date();
@@ -70,7 +72,9 @@ export async function runAgent(
             messages: messages,
           });
         } catch {
-          console.error('[agent] Anthropic API failed after retry');
+          console.error(
+            `[agent] Anthropic API failed after retry | | input: ${totalInputTokens} tokens, output: ${totalOutputTokens} tokens.`,
+          );
           return {
             success: false,
             error: {
@@ -81,7 +85,9 @@ export async function runAgent(
         }
       } else {
         const message = error instanceof APIError ? error.message : 'Unknown API error';
-        console.error(`[agent] non-retryable API error: ${message}`);
+        console.error(
+          `[agent] non-retryable API error: ${message} | | input: ${totalInputTokens} tokens, output: ${totalOutputTokens} tokens.`,
+        );
         return {
           success: false,
           error: { code: 'API_ERROR', message },
@@ -91,6 +97,11 @@ export async function runAgent(
 
     totalInputTokens += response.usage.input_tokens;
     totalOutputTokens += response.usage.output_tokens;
+    if (totalInputTokens + totalOutputTokens >= THRESHOLD) {
+      console.warn(
+        `Token Usage equal or greater than context window ${totalInputTokens + totalOutputTokens}`,
+      );
+    }
 
     messages.push({ role: 'assistant', content: response.content });
 
@@ -100,7 +111,7 @@ export async function runAgent(
       const reply = textBlocks.map((block) => block.text).join('\n');
 
       console.log(
-        `[agent] done in ${iterations} interation(s) | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}`,
+        `[agent] done in ${iterations} iteration(s) | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}`,
       );
 
       return {
@@ -134,19 +145,23 @@ export async function runAgent(
           });
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          console.error(`[agent] tool execution error: ${toolUse.name} — ${message}`);
+          console.error(
+            `[agent] tool execution error: ${toolUse.name} — ${message}| | input: ${totalInputTokens} tokens, output: ${totalOutputTokens} tokens.`,
+          );
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
-            content: `Tool error: ${toolUse.name} failed - ${message}`,
+            content: `Tool error: ${toolUse.name} failed - ${message} `,
           });
         }
       }
-
       messages.push({ role: 'user', content: toolResults });
       continue;
     }
 
+    console.error(
+      `[agent] unexpected stop reason: ${response.stop_reason} | input: ${totalInputTokens} tokens, output: ${totalOutputTokens} tokens`,
+    );
     return {
       success: false,
       error: {
@@ -156,7 +171,7 @@ export async function runAgent(
     };
   }
   console.log(
-    `[agent] hit interation limit (${MAX_ITERATIONS}) | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}tokens`,
+    `[agent] hit iteration limit (${MAX_ITERATIONS}) | input: ${totalInputTokens} tokens, output: ${totalOutputTokens}tokens`,
   );
 
   return {
